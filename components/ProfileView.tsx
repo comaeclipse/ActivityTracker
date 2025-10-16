@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from 'react';
 import UserActivityList from '@/components/UserActivityList';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { User, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { User, Calendar, Link, Check } from 'lucide-react';
 
 interface ProfileViewProps {
   userId: string;
@@ -17,20 +19,53 @@ export default function ProfileView({
   createdAt,
   isOwnProfile = false,
 }: ProfileViewProps) {
+  const [copied, setCopied] = useState(false);
+
   const memberSince = new Date(createdAt).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   });
+
+  const handleCopyUrl = async () => {
+    const profileUrl = `${window.location.origin}/user/${username}`;
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Profile Header */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            {isOwnProfile ? 'Your Profile' : `${username}'s Profile`}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {isOwnProfile ? 'Your Profile' : `${username}'s Profile`}
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyUrl}
+              className="gap-2"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Link className="h-4 w-4" />
+                  Copy URL
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
