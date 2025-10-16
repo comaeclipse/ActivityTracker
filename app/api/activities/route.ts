@@ -7,7 +7,7 @@ const TYPES: readonly ActivityType[] = ['RUN','WALK','SWIM','WEIGHTS','BIKE','HY
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, type, value, unit, durationMinutes, notes, activityDate } = body ?? {};
+    const { userId, type, value, unit, durationMinutes, notes, activityDate, latitude, longitude } = body ?? {};
 
     if (!userId || typeof userId !== 'string') {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
@@ -45,6 +45,23 @@ export async function POST(request: Request) {
       }
     }
 
+    // Validate location if provided
+    let lat = null;
+    let lng = null;
+    if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
+      lat = Number(latitude);
+      lng = Number(longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return NextResponse.json({ error: 'latitude and longitude must be valid numbers' }, { status: 400 });
+      }
+      if (lat < -90 || lat > 90) {
+        return NextResponse.json({ error: 'latitude must be between -90 and 90' }, { status: 400 });
+      }
+      if (lng < -180 || lng > 180) {
+        return NextResponse.json({ error: 'longitude must be between -180 and 180' }, { status: 400 });
+      }
+    }
+
     const created = await prisma.activity.create({
       data: {
         userId,
@@ -53,6 +70,8 @@ export async function POST(request: Request) {
         unit: hasValue ? unit : null,
         durationMinutes: duration,
         notes: notes || null,
+        latitude: lat,
+        longitude: lng,
         activityDate: activityDate ? new Date(activityDate) : new Date()
       },
       include: { user: { select: { id: true, username: true } } },
@@ -67,6 +86,8 @@ export async function POST(request: Request) {
         unit: created.unit,
         durationMinutes: created.durationMinutes,
         notes: created.notes,
+        latitude: created.latitude,
+        longitude: created.longitude,
         activityDate: created.activityDate,
         createdAt: created.createdAt,
       },

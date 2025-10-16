@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import ActivityMap from '@/components/ActivityMap';
 
 interface ActivityData {
   id: string;
@@ -16,6 +17,8 @@ interface ActivityData {
   unit: string | null;
   durationMinutes: number | null;
   notes: string | null;
+  latitude: number | null;
+  longitude: number | null;
   activityDate: string;
   createdAt: string;
   likeCount: number;
@@ -244,7 +247,7 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <p className="font-medium text-foreground">
                           {label}: {activity.value !== null && activity.unit !== null && `${activity.value} ${activity.unit}`}
@@ -283,10 +286,14 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
                             </span>
                           )}
                         </div>
+                        <span className="text-xs text-muted-foreground block mt-2">
+                          {formatDate(activity.createdAt)}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDate(activity.createdAt)}
-                      </span>
+                      {/* Activity Map */}
+                      {activity.latitude !== null && activity.longitude !== null && (
+                        <ActivityMap latitude={activity.latitude} longitude={activity.longitude} />
+                      )}
                     </div>
                   </div>
                 </div>

@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
       unit: a.unit,
       durationMinutes: a.durationMinutes,
       notes: a.notes,
+      latitude: a.latitude,
+      longitude: a.longitude,
       activityDate: a.activityDate,
       createdAt: a.createdAt,
       likeCount: a._count.likes,

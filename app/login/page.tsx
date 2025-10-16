@@ -7,6 +7,7 @@ import { generateRandomUsername, generateRandomPassword } from '@/lib/generators
 import { Shuffle, Eye, EyeOff, LogIn, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -233,6 +234,8 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      <SpeedInsights />
     </div>
   );
 }

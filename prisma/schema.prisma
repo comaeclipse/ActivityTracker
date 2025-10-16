@@ -33,6 +33,8 @@ model Activity {
   unit            String?
   durationMinutes Int?
   notes           String?
+  latitude        Float?
+  longitude       Float?
   activityDate    DateTime     @default(now())
 
   createdAt       DateTime     @default(now())

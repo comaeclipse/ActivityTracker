@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import ProfileView from '@/components/ProfileView';
 import { Activity } from 'lucide-react';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function ProfilePage() {
   const { user, isLoading } = useAuth();
@@ -23,6 +24,7 @@ export default function ProfilePage() {
           <Activity className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
+        <SpeedInsights />
       </div>
     );
   }
@@ -32,11 +34,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <ProfileView
-      userId={user.id}
-      username={user.username}
-      createdAt={user.createdAt}
-      isOwnProfile={true}
-    />
+    <>
+      <ProfileView
+        userId={user.id}
+        username={user.username}
+        createdAt={user.createdAt}
+        isOwnProfile={true}
+      />
+      <SpeedInsights />
+    </>
   );
 }

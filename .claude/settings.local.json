@@ -9,7 +9,10 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(npx prisma migrate:*)",
       "Bash(npx prisma db push:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(tree:*)",
+      "Bash(npx shadcn@latest add alert skeleton badge)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

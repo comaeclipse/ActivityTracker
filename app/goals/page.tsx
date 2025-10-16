@@ -9,6 +9,7 @@ import GoalCard from '@/components/GoalCard';
 import GoalForm from '@/components/GoalForm';
 import GoalUpdateForm from '@/components/GoalUpdateForm';
 import { Target, Plus, Activity, Filter } from 'lucide-react';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 interface Goal {
   id: string;
@@ -124,6 +125,7 @@ export default function GoalsPage() {
           <Activity className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
+        <SpeedInsights />
       </div>
     );
   }
@@ -269,6 +271,8 @@ export default function GoalsPage() {
           onSuccess={handleFormSuccess}
         />
       )}
+
+      <SpeedInsights />
     </div>
   );
 }

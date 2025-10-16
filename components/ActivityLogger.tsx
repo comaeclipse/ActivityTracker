@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth-context';
 import { Activity, Calendar } from 'lucide-react';
+import LocationPicker from '@/components/LocationPicker';
 
 type ActivityType = 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION';
 
@@ -37,6 +38,8 @@ export default function ActivityLogger() {
     return now.toISOString().slice(0, 16);
   });
   const [notes, setNotes] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -44,6 +47,11 @@ export default function ActivityLogger() {
     const activity = ACTIVITY_OPTIONS.find(opt => opt.value === activityValue)!;
     setSelectedActivity(activity);
     setUnit(activity.defaultUnit);
+  };
+
+  const handleLocationChange = (lat: number | null, lng: number | null) => {
+    setLatitude(lat);
+    setLongitude(lng);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,6 +101,11 @@ export default function ActivityLogger() {
         payload.durationMinutes = Number(durationMinutes);
       }
 
+      if (latitude !== null && longitude !== null) {
+        payload.latitude = latitude;
+        payload.longitude = longitude;
+      }
+
       const response = await fetch('/api/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,6 +122,8 @@ export default function ActivityLogger() {
       setValue('');
       setDurationMinutes('');
       setNotes('');
+      setLatitude(null);
+      setLongitude(null);
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       setActivityDate(now.toISOString().slice(0, 16));
@@ -238,6 +253,9 @@ export default function ActivityLogger() {
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
             />
           </div>
+
+          {/* Location Picker */}
+          <LocationPicker onLocationChange={handleLocationChange} />
 
           {/* Submit Button */}
           <Button type="submit" className="w-full" disabled={isSubmitting}>

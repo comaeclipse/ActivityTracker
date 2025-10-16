@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import ProfileView from '@/components/ProfileView';
 import { Activity } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 interface UserData {
   id: string;
@@ -58,6 +59,7 @@ export default function PublicProfilePage() {
           <Activity className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
           <p className="text-muted-foreground">Loading profile...</p>
         </div>
+        <SpeedInsights />
       </div>
     );
   }
@@ -80,16 +82,20 @@ export default function PublicProfilePage() {
             </div>
           </CardContent>
         </Card>
+        <SpeedInsights />
       </div>
     );
   }
 
   return (
-    <ProfileView
-      userId={user.id}
-      username={user.username}
-      createdAt={user.createdAt}
-      isOwnProfile={false}
-    />
+    <>
+      <ProfileView
+        userId={user.id}
+        username={user.username}
+        createdAt={user.createdAt}
+        isOwnProfile={false}
+      />
+      <SpeedInsights />
+    </>
   );
 }

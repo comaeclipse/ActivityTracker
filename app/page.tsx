@@ -1,6 +1,7 @@
 import ActivityFeed from '@/components/ActivityFeed';
 import StatsCards from '@/components/StatsCards';
 import ActivityLogger from '@/components/ActivityLogger';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function HomePage() {
   return (
@@ -13,6 +14,8 @@ export default function HomePage() {
 
       {/* Recent Activities */}
       <ActivityFeed />
+
+      <SpeedInsights />
     </div>
   );
 }
