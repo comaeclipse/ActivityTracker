@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  // For Neon/pooled connections: use pooled `DATABASE_URL` for app, and
+  // non-pooled `DIRECT_URL` for migrations.
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 String      @id @default(cuid())
+  username           String      @unique
+  password           String
+  showWeightPublicly Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+
+  activities     Activity[]
+  weightLogs     WeightLog[]
+  activityLikes  ActivityLike[]
+  goals          Goal[]
+}
+
+model Activity {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+
+  type            ActivityType
+  value           Float?
+  unit            String?
+  durationMinutes Int?
+  notes           String?
+  activityDate    DateTime     @default(now())
+
+  createdAt       DateTime     @default(now())
+
+  likes           ActivityLike[]
+}
+
+model WeightLog {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+
+  weight    Float
+  unit      String    @default("lbs")
+  isPublic  Boolean   @default(false)
+
+  createdAt DateTime  @default(now())
+}
+
+model ActivityLike {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, activityId])
+  @@index([activityId])
+}
+
+model Goal {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title        String
+  description  String?
+  goalType     GoalType   @default(INCREASE)
+  targetValue  Float
+  currentValue Float      @default(0)
+  unit         String
+  deadline     DateTime?
+  status       GoalStatus @default(ACTIVE)
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  updates      GoalUpdate[]
+
+  @@index([userId])
+}
+
+model GoalUpdate {
+  id        String   @id @default(cuid())
+  goalId    String
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  value     Float
+  notes     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([goalId])
+}
+
+enum ActivityType {
+  RUN
+  WALK
+  SWIM
+  WEIGHTS
+  BIKE
+  HYDRATION
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum GoalType {
+  INCREASE
+  DECREASE
+}

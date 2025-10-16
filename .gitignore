@@ -1,0 +1,16 @@
+# Node / Next
+.next
+node_modules
+.env
+.env.*
+out
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Prisma
+prisma/generated
+
+
+.vercel

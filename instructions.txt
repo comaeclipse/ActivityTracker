@@ -1,0 +1,315 @@
+# **Workout Logger - Complete High-Level Overview**
+
+## **🎯 What We're Building**
+
+An internal web app where coworkers can anonymously log workouts, track hydration, monitor weight, and see each other's activity in a social feed. Think: old-school Facebook meets fitness tracker.
+
+---
+
+## **🏗️ Architecture**
+
+```
+┌─────────────────────────────────────────┐
+│         Next.js App (Port 3000)         │
+│  ┌───────────────────────────────────┐  │
+│  │  Frontend (React Components)      │  │
+│  │  - Activity Feed                  │  │
+│  │  - Hydration Charts               │  │
+│  │  - Status Bar                     │  │
+│  │  - Weight Tracker                 │  │
+│  └───────────────────────────────────┘  │
+│                  ↕                       │
+│  ┌───────────────────────────────────┐  │
+│  │  API Routes (/app/api/*)          │  │
+│  │  - POST /api/activities           │  │
+│  │  - GET  /api/feed                 │  │
+│  │  - POST /api/auth/signup          │  │
+│  │  - POST /api/weight               │  │
+│  └───────────────────────────────────┘  │
+│                  ↕                       │
+│  ┌───────────────────────────────────┐  │
+│  │  Prisma ORM                       │  │
+│  └───────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+                   ↕
+        ┌──────────────────────┐
+        │   PostgreSQL DB      │
+        │  - users             │
+        │  - activities        │
+        │  - weight_logs       │
+        └──────────────────────┘
+```
+
+---
+
+## **🛠️ Tech Stack**
+
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| **Framework** | Next.js 14 (App Router) | Full-stack React, API routes built-in |
+| **Language** | TypeScript | Catch bugs before they happen |
+| **Database** | PostgreSQL | Reliable, handles relationships well |
+| **ORM** | Prisma | Type-safe DB queries, easy migrations |
+| **Auth** | NextAuth.js | Session management out-of-box |
+| **UI Components** | Shadcn/ui + Tailwind | Copy-paste beautiful components |
+| **Charts** | Recharts | React-native, easy to customize |
+| **Deployment** | Vercel (app) + Railway (DB) | Free tier, auto-deploys |
+
+---
+
+## **📊 Database Schema**
+
+```prisma
+model User {
+  id                    String        @id @default(cuid())
+  username              String        @unique
+  password              String        // bcrypt hashed
+  showWeightPublicly    Boolean       @default(false)
+  createdAt             DateTime      @default(now())
+  
+  activities            Activity[]
+  weightLogs            WeightLog[]
+}
+
+model Activity {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  
+  type          ActivityType  // enum: RUN, WALK, SWIM, WEIGHTS, BIKE, HYDRATION
+  value         Float         // miles, minutes, ounces
+  unit          String        // "miles", "minutes", "oz"
+  notes         String?       // optional user note
+  
+  createdAt     DateTime      @default(now())
+}
+
+model WeightLog {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  
+  weight        Float
+  unit          String        @default("lbs")
+  isPublic      Boolean       @default(false)
+  
+  createdAt     DateTime      @default(now())
+}
+
+enum ActivityType {
+  RUN
+  WALK
+  SWIM
+  WEIGHTS
+  BIKE
+  HYDRATION
+}
+```
+
+---
+
+## **🎨 Key Pages & Features**
+
+### **1. Homepage (`/`)**
+- **Activity Feed** (center)
+  - Real-time stream of all user activities
+  - "QuickTiger89 ran 3.5 miles - 2 hours ago"
+  - "BraveWolf42 drank 16oz water - 5 minutes ago"
+- **Status Bar** (top)
+  - Facebook-style "What are you up to?" input
+  - Quick buttons: +8oz Water, Log Run, Log Bike, etc.
+- **Hydration Chart** (sidebar)
+  - Bar chart showing today's water intake per user
+  - Color-coded by username
+
+### **2. Registration/Login (`/auth`)**
+- **Sign Up Flow:**
+  1. Click "Create Account"
+  2. System generates random username (e.g., "SwiftPanda23")
+  3. Shows generated password OR lets user choose their own
+  4. Account created, auto-logged in
+- **Login:**
+  - Enter username + password
+  - Session stored in cookie
+
+### **3. Profile Page (`/profile`)**
+- View your activity history
+- **Weight Tracker:**
+  - Line chart of weight over time
+  - Toggle: "Make weight public" checkbox
+  - Log new weight entry
+- Personal stats dashboard
+
+### **4. Hydration Dashboard (`/hydration`)**
+- Interactive chart showing all users' water intake
+- Time period filters (Today, This Week, This Month)
+- Leaderboard (optional)
+- Big "+8oz" button
+
+---
+
+## **🔑 Key Features Breakdown**
+
+### **Anonymous Registration**
+```typescript
+// Auto-generates usernames like:
+const adjectives = ['Quick', 'Brave', 'Swift', 'Bold', 'Mighty'];
+const animals = ['Tiger', 'Wolf', 'Eagle', 'Bear', 'Fox'];
+const randomNum = Math.floor(Math.random() * 100);
+
+username = `${adjective}${animal}${randomNum}`; // "BraveWolf42"
+
+// Generates random password or accepts custom
+password = generatePassword() || userCustomPassword;
+```
+
+### **Activity Logging**
+```typescript
+// Quick-log 8oz water
+await createActivity({
+  type: 'HYDRATION',
+  value: 8,
+  unit: 'oz'
+});
+
+// Log run with distance
+await createActivity({
+  type: 'RUN',
+  value: 3.5,
+  unit: 'miles',
+  notes: 'Morning jog, felt great!'
+});
+```
+
+### **Activity Feed**
+```typescript
+// Real-time feed query
+const recentActivities = await prisma.activity.findMany({
+  include: { user: true },
+  orderBy: { createdAt: 'desc' },
+  take: 50
+});
+
+// Renders:
+// "QuickTiger89 swam for 30 minutes - 1 hour ago"
+```
+
+### **Weight Privacy**
+```typescript
+// User can toggle
+user.showWeightPublicly = true/false;
+
+// When fetching weight data
+if (weightLog.user.showWeightPublicly || isOwnProfile) {
+  // Show weight
+} else {
+  // Hide weight
+}
+```
+
+---
+
+## **📁 Project Structure**
+
+```
+workout-logger/
+├── app/
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── signup/route.ts
+│   │   │   └── login/route.ts
+│   │   ├── activities/
+│   │   │   ├── route.ts          # POST new activity
+│   │   │   └── feed/route.ts     # GET activity feed
+│   │   ├── hydration/
+│   │   │   └── route.ts          # GET hydration stats
+│   │   └── weight/
+│   │       └── route.ts          # POST/GET weight logs
+│   ├── (pages)/
+│   │   ├── page.tsx              # Homepage with feed
+│   │   ├── profile/page.tsx      # User profile
+│   │   ├── hydration/page.tsx    # Hydration dashboard
+│   │   └── auth/page.tsx         # Login/signup
+│   └── layout.tsx                # Root layout
+├── components/
+│   ├── ActivityFeed.tsx          # Main feed component
+│   ├── StatusBar.tsx             # "What are you up to?" input
+│   ├── HydrationChart.tsx        # Water intake chart
+│   ├── WeightTracker.tsx         # Weight logging & chart
+│   └── QuickLogButton.tsx        # +8oz water button
+├── lib/
+│   ├── prisma.ts                 # Prisma client
+│   ├── auth.ts                   # NextAuth config
+│   └── utils.ts                  # Helper functions
+├── prisma/
+│   └── schema.prisma             # Database schema
+└── package.json
+```
+
+---
+
+## **🚀 Development Flow**
+
+### **Phase 1: Setup (Day 1)**
+```bash
+npx create-next-app@latest workout-logger
+cd workout-logger
+npm install prisma @prisma/client next-auth recharts bcrypt
+npx prisma init
+# Configure DATABASE_URL in .env
+npx prisma db push
+```
+
+### **Phase 2: Auth (Days 2-3)**
+- Build signup page with random username generator
+- Implement NextAuth with credentials
+- Create login/logout flow
+
+### **Phase 3: Activity Logging (Days 4-6)**
+- Status bar component
+- Quick-log buttons
+- API routes for creating activities
+- Activity feed display
+
+### **Phase 4: Charts (Days 7-9)**
+- Hydration chart with Recharts
+- Fetch and display data
+- Time period filters
+
+### **Phase 5: Weight Tracking (Days 10-11)**
+- Weight logging UI
+- Privacy toggle
+- Weight chart
+
+### **Phase 6: Polish (Days 12-14)**
+- Responsive design
+- Error handling
+- Deploy to Vercel
+
+---
+
+## **🎯 User Flow Example**
+
+1. **Sarah visits site** → No account
+2. **Clicks "Create Account"** → Gets username "MightyEagle67" and password "blue-sky-2024"
+3. **Logs in** → Sees activity feed from coworkers
+4. **Clicks "+8oz Water"** → Activity posted: "MightyEagle67 drank 8oz water - just now"
+5. **Types in status bar** → "Ran 5 miles this morning!"
+6. **Submits** → Appears in feed: "MightyEagle67 ran 5 miles - just now"
+7. **Checks hydration chart** → Sees she's behind QuickTiger89 today
+8. **Logs weight** → Keeps it private for now
+
+---
+
+## **💡 Why This Architecture Works**
+
+- **Single codebase** = Frontend + Backend together
+- **Type safety** = TypeScript + Prisma catch errors early
+- **No separate API** = API routes live with frontend
+- **Easy deployment** = Push to GitHub → Auto-deploys to Vercel
+- **Scalable** = Can handle dozens of coworkers easily
+- **Maintainable** = Clean structure, modern patterns
+
+---
+
+**Want me to start building it now?** I can create all the initial files and get you started coding in minutes.
