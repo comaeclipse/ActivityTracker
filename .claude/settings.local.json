@@ -12,7 +12,9 @@
       "Bash(npx prisma generate:*)",
       "Bash(tree:*)",
       "Bash(npx shadcn@latest add alert skeleton badge)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
