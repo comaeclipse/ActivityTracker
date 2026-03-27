@@ -16,13 +16,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `type must be one of ${TYPES.join(', ')}` }, { status: 400 });
     }
 
-    // Validate that at least one of value/unit or durationMinutes is provided
     const hasValue = value !== undefined && value !== null && value !== '';
     const hasDuration = durationMinutes !== undefined && durationMinutes !== null && durationMinutes !== '';
-
-    if (!hasValue && !hasDuration) {
-      return NextResponse.json({ error: 'Either value/unit or duration is required' }, { status: 400 });
-    }
 
     // Validate value if provided
     let num = null;

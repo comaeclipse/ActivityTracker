@@ -7,6 +7,9 @@ import { useAuth } from '@/lib/auth-context';
 type Level = 'collapsed' | 'category' | 'strength' | 'cardio' | 'calisthenics';
 type CardioType = 'RUN' | 'WALK' | 'BIKE' | 'SWIM';
 
+const strengthOptions = ['Push', 'Pull', 'Legs', 'Core', 'Full Body'];
+const calisthenicsOptions = ['Push-ups', 'Pull-ups', 'Dips', 'Squats', 'Core'];
+
 const cardioOptions: { value: CardioType; label: string }[] = [
   { value: 'RUN',  label: 'Run'  },
   { value: 'WALK', label: 'Walk' },
@@ -17,14 +20,15 @@ const cardioOptions: { value: CardioType; label: string }[] = [
 export default function ActivityLogger() {
   const { user } = useAuth();
 
-  const [level, setLevel]           = useState<Level>('collapsed');
-  const [cardioType, setCardioType] = useState<CardioType>('RUN');
-  const [duration, setDuration]     = useState('');
-  const [distance, setDistance]     = useState('');
-  const [notes, setNotes]           = useState('');
-  const [activityDate, setActivityDate] = useState(nowLocal);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [level, setLevel]                       = useState<Level>('collapsed');
+  const [cardioType, setCardioType]             = useState<CardioType | null>(null);
+  const [strengthFocus, setStrengthFocus]       = useState<string[]>([]);
+  const [calisthenicsFocus, setCalisthenicsFocus] = useState<string[]>([]);
+  const [distance, setDistance]                 = useState('');
+  const [notes, setNotes]                       = useState('');
+  const [activityDate, setActivityDate]         = useState(nowLocal);
+  const [isSubmitting, setIsSubmitting]         = useState(false);
+  const [message, setMessage]                   = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   function nowLocal() {
     const d = new Date();
@@ -34,29 +38,37 @@ export default function ActivityLogger() {
 
   const reset = () => {
     setLevel('collapsed');
-    setCardioType('RUN');
-    setDuration('');
+    setCardioType(null);
+    setStrengthFocus([]);
+    setCalisthenicsFocus([]);
     setDistance('');
     setNotes('');
     setMessage(null);
     setActivityDate(nowLocal());
   };
 
-  const submit = async (type: string) => {
+  const toggleStrength     = (opt: string) =>
+    setStrengthFocus(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
+
+  const toggleCalisthenics = (opt: string) =>
+    setCalisthenicsFocus(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
+
+  const buildNotes = (focus: string[]) => {
+    const focusStr = focus.join(', ');
+    if (focusStr && notes) return `${focusStr} · ${notes}`;
+    return focusStr || notes || undefined;
+  };
+
+  const submit = async (type: string, focus: string[] = []) => {
     if (!user) return;
-    if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
-      setMessage({ type: 'error', text: 'Please enter a valid duration' });
-      return;
-    }
     setIsSubmitting(true);
     setMessage(null);
     try {
       const payload: Record<string, unknown> = {
         userId: user.id,
         type,
-        durationMinutes: Number(duration),
         activityDate: new Date(activityDate).toISOString(),
-        notes: notes || undefined,
+        notes: buildNotes(focus),
       };
       if (distance && !isNaN(Number(distance)) && Number(distance) > 0) {
         payload.value = Number(distance);
@@ -138,11 +150,11 @@ export default function ActivityLogger() {
       {level === 'strength' && (
         <div className="space-y-4 animate-fadeIn">
           <FormHeader title="Strength Training" onBack={() => setLevel('category')} onClose={reset} />
-          <DurationField value={duration} onChange={setDuration} />
           <DateField value={activityDate} onChange={setActivityDate} />
+          <ToggleGroup label="Focus (optional)" options={strengthOptions} selected={strengthFocus} onToggle={toggleStrength} />
           <NotesField value={notes} onChange={setNotes} />
           {message && <StatusMessage {...message} />}
-          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Strength'} disabled={isSubmitting || !duration} onClick={() => submit('WEIGHTS')} />
+          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Strength'} disabled={isSubmitting} onClick={() => submit('WEIGHTS', strengthFocus)} />
         </div>
       )}
 
@@ -150,29 +162,36 @@ export default function ActivityLogger() {
       {level === 'cardio' && (
         <div className="space-y-4 animate-fadeIn">
           <FormHeader title="Cardio" onBack={() => setLevel('category')} onClose={reset} />
-          <div className="grid grid-cols-4 gap-2">
-            {cardioOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setCardioType(opt.value)}
-                className={`py-2 rounded-lg border-2 text-sm font-semibold transition ${
-                  cardioType === opt.value
-                    ? 'border-white bg-white text-blue-700'
-                    : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <DateField value={activityDate} onChange={setActivityDate} />
+          <div>
+            <label className="text-xs font-medium text-white/80 mb-1.5 block">Type (optional)</label>
+            <div className="grid grid-cols-4 gap-2">
+              {cardioOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCardioType(prev => prev === opt.value ? null : opt.value)}
+                  className={`py-2 rounded-lg border-2 text-sm font-semibold transition ${
+                    cardioType === opt.value
+                      ? 'border-white bg-white text-blue-700'
+                      : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
           {(cardioType === 'RUN' || cardioType === 'WALK') && (
             <DistanceField value={distance} onChange={setDistance} />
           )}
-          <DurationField value={duration} onChange={setDuration} />
-          <DateField value={activityDate} onChange={setActivityDate} />
           <NotesField value={notes} onChange={setNotes} />
           {message && <StatusMessage {...message} />}
-          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Cardio'} disabled={isSubmitting || !duration} onClick={() => submit(cardioType)} />
+          <SubmitBtn
+            label={isSubmitting ? 'Logging…' : 'Log Cardio'}
+            disabled={isSubmitting}
+            onClick={() => submit(cardioType ?? 'RUN', [])}
+          />
         </div>
       )}
 
@@ -180,11 +199,11 @@ export default function ActivityLogger() {
       {level === 'calisthenics' && (
         <div className="space-y-4 animate-fadeIn">
           <FormHeader title="Calisthenics" onBack={() => setLevel('category')} onClose={reset} />
-          <DurationField value={duration} onChange={setDuration} />
           <DateField value={activityDate} onChange={setActivityDate} />
+          <ToggleGroup label="Focus (optional)" options={calisthenicsOptions} selected={calisthenicsFocus} onToggle={toggleCalisthenics} />
           <NotesField value={notes} onChange={setNotes} />
           {message && <StatusMessage {...message} />}
-          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Calisthenics'} disabled={isSubmitting || !duration} onClick={() => submit('WEIGHTS')} />
+          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Calisthenics'} disabled={isSubmitting} onClick={() => submit('WEIGHTS', calisthenicsFocus)} />
         </div>
       )}
     </div>
@@ -207,15 +226,31 @@ function FormHeader({ title, onBack, onClose }: { title: string; onBack: () => v
   );
 }
 
-function DurationField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ToggleGroup({ label, options, selected, onToggle }: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (opt: string) => void;
+}) {
   return (
     <div>
-      <label className="text-xs font-medium text-white/80 mb-1.5 block">Duration (minutes) *</label>
-      <input
-        type="number" min="1" placeholder="45"
-        value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white text-blue-900 placeholder-blue-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50"
-      />
+      <label className="text-xs font-medium text-white/80 mb-1.5 block">{label}</label>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onToggle(opt)}
+            className={`px-3 py-1.5 rounded-lg border-2 text-sm font-semibold transition ${
+              selected.includes(opt)
+                ? 'border-white bg-white text-blue-700'
+                : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
