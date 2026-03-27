@@ -85,7 +85,7 @@ export default function ActivityLogger() {
   return (
     <div
       className={`bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg transition-all duration-500 ease-in-out overflow-hidden ${expanded ? 'p-5' : 'p-3'}`}
-      style={{ maxHeight: expanded ? '900px' : '56px' }}
+      style={{ maxHeight: expanded ? '900px' : '68px' }}
     >
 
       {/* ── Collapsed ── */}
