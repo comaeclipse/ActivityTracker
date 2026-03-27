@@ -14,7 +14,9 @@
       "Bash(npx shadcn@latest add alert skeleton badge)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
