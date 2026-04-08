@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Bell, Mail, Menu, LogOut, User, X } from 'lucide-react';
+import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Bell, Mail, Menu, LogOut, User, X, Shield } from 'lucide-react';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading } = useAuth();
@@ -73,14 +73,14 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-card shadow-md hidden md:block border-r border-border">
+      <aside className="w-64 bg-card shadow-md hidden md:flex flex-col border-r border-border sticky top-0 h-screen">
         <div className="flex items-center justify-center h-16 px-4 border-b border-border">
           <div className="flex items-center space-x-2">
             <Activity className="text-secondary w-6 h-6" />
             <span className="text-xl font-semibold text-foreground">FitLog</span>
           </div>
         </div>
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
           <a
             href="/"
             className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
@@ -130,8 +130,21 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             <Settings className="w-5 h-5 mr-3" />
             Settings
           </a>
+          {user.role === 'AUDITOR' && (
+            <a
+              href="/auditor"
+              className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                pathname.startsWith('/auditor')
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Shield className="w-5 h-5 mr-3" />
+              Auditor
+            </a>
+          )}
         </nav>
-        <div className="absolute bottom-0 w-64 p-4 border-t border-border">
+        <div className="p-4 border-t border-border">
           <div className="flex items-center justify-between">
             <a
               href="/profile"
@@ -141,7 +154,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary mr-3 flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground truncate">{user.username}</p>
-                <p className="text-xs text-muted-foreground">Member</p>
+                <p className="text-xs text-muted-foreground">{user.role === 'AUDITOR' ? 'Auditor' : 'Member'}</p>
               </div>
             </a>
             <button
@@ -271,6 +284,20 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                     <Settings className="w-5 h-5 mr-3" />
                     Settings
                   </a>
+                  {user.role === 'AUDITOR' && (
+                    <a
+                      href="/auditor"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                        pathname.startsWith('/auditor')
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <Shield className="w-5 h-5 mr-3" />
+                      Auditor
+                    </a>
+                  )}
                 </nav>
 
                 {/* User profile footer */}
@@ -285,7 +312,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary mr-3 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground truncate">{user.username}</p>
-                        <p className="text-xs text-muted-foreground">Member</p>
+                        <p className="text-xs text-muted-foreground">{user.role === 'AUDITOR' ? 'Auditor' : 'Member'}</p>
                       </div>
                     </a>
                     <button
@@ -306,7 +333,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         <header className="bg-card shadow-sm hidden md:block border-b border-border">
           <div className="flex items-center justify-between px-6 py-4">
             <h1 className="text-2xl font-bold text-foreground">
-              {pathname === '/profile' ? 'Profile' : pathname === '/analytics' ? 'Analytics' : 'Dashboard'}
+              {pathname === '/profile' ? 'Profile' : pathname === '/analytics' ? 'Analytics' : pathname.startsWith('/auditor') ? 'Auditor' : 'Dashboard'}
             </h1>
             <div className="flex items-center space-x-4">
               <button className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">

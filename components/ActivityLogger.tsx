@@ -5,16 +5,16 @@ import { Plus, X, ChevronLeft, Dumbbell, Activity, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 type Level = 'collapsed' | 'category' | 'strength' | 'cardio' | 'calisthenics';
-type CardioType = 'RUN' | 'WALK' | 'BIKE' | 'SWIM';
+type CardioType = 'RUN' | 'WALK' | 'BIKE' | 'ROW';
 
 const strengthOptions = ['Push', 'Pull', 'Legs', 'Core', 'Full Body'];
-const calisthenicsOptions = ['Push-ups', 'Pull-ups', 'Dips', 'Squats', 'Core'];
+const calisthenicsOptions = ['Push-ups', 'Pull-ups', 'Yoga', 'Squats', 'Core'];
 
 const cardioOptions: { value: CardioType; label: string }[] = [
   { value: 'RUN',  label: 'Run'  },
   { value: 'WALK', label: 'Walk' },
   { value: 'BIKE', label: 'Bike' },
-  { value: 'SWIM', label: 'Swim' },
+  { value: 'ROW',  label: 'Row'  },
 ];
 
 export default function ActivityLogger() {

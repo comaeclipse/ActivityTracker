@@ -15,6 +15,7 @@ model User {
   username           String      @unique
   password           String
   showWeightPublicly Boolean     @default(false)
+  role               UserRole    @default(USER)
   createdAt          DateTime    @default(now())
 
   activities     Activity[]
@@ -102,6 +103,11 @@ model GoalUpdate {
   @@index([goalId])
 }
 
+enum UserRole {
+  USER
+  AUDITOR
+}
+
 enum ActivityType {
   RUN
   WALK
@@ -109,6 +115,7 @@ enum ActivityType {
   WEIGHTS
   BIKE
   HYDRATION
+  ROW
 }
 
 enum GoalStatus {

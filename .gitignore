@@ -14,3 +14,4 @@ prisma/generated
 
 
 .vercel
+.claude/settings.local.json

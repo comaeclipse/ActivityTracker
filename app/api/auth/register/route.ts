@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
           id: user.id,
           username: user.username,
           createdAt: user.createdAt,
+          role: user.role,
         },
       },
       { status: 201 }

@@ -6,6 +6,7 @@ type User = {
   id: string;
   username: string;
   createdAt: string;
+  role: 'USER' | 'AUDITOR';
 };
 
 type AuthContextType = {
@@ -26,7 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser({ ...parsed, role: parsed.role ?? 'USER' });
       } catch (e) {
         localStorage.removeItem('user');
       }
