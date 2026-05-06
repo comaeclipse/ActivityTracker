@@ -126,7 +126,14 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             <Users className="w-5 h-5 mr-3" />
             Community
           </a>
-          <a href="#" className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+          <a
+            href="/settings"
+            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+              pathname === '/settings'
+                ? 'bg-primary/10 text-primary font-medium'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
             <Settings className="w-5 h-5 mr-3" />
             Settings
           </a>
@@ -277,9 +284,13 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                     Community
                   </a>
                   <a
-                    href="#"
+                    href="/settings"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                      pathname === '/settings'
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
                   >
                     <Settings className="w-5 h-5 mr-3" />
                     Settings
@@ -333,7 +344,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         <header className="bg-card shadow-sm hidden md:block border-b border-border">
           <div className="flex items-center justify-between px-6 py-4">
             <h1 className="text-2xl font-bold text-foreground">
-              {pathname === '/profile' ? 'Profile' : pathname === '/analytics' ? 'Analytics' : pathname.startsWith('/auditor') ? 'Auditor' : 'Dashboard'}
+              {pathname === '/profile' ? 'Profile' : pathname === '/analytics' ? 'Analytics' : pathname.startsWith('/auditor') ? 'Auditor' : pathname === '/settings' ? 'Settings' : 'Dashboard'}
             </h1>
             <div className="flex items-center space-x-4">
               <button className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">

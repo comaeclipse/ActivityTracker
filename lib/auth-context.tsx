@@ -7,12 +7,14 @@ type User = {
   username: string;
   createdAt: string;
   role: 'USER' | 'AUDITOR';
+  hideFromCommunity?: boolean;
 };
 
 type AuthContextType = {
   user: User | null;
   login: (user: User) => void;
   logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
   isLoading: boolean;
 };
 
@@ -46,8 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updates };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

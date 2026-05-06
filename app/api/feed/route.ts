@@ -12,7 +12,14 @@ export async function GET(request: NextRequest) {
     const take = Math.min(Math.max(parseInt(takeParam || '50', 10) || 50, 1), 200);
 
     const items = await prisma.activity.findMany({
-      where: userId ? { userId } : undefined,
+      where: userId
+        ? { userId }
+        : {
+            OR: [
+              { user: { hideFromCommunity: false } },
+              ...(currentUserId ? [{ userId: currentUserId }] : []),
+            ],
+          },
       include: {
         user: { select: { id: true, username: true } },
         likes: currentUserId ? {
