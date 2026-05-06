@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Bell, Mail, Menu, LogOut, User, X, Shield } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading } = useAuth();
@@ -347,9 +348,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               {pathname === '/profile' ? 'Profile' : pathname === '/analytics' ? 'Analytics' : pathname.startsWith('/auditor') ? 'Auditor' : pathname === '/settings' ? 'Settings' : 'Dashboard'}
             </h1>
             <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <Bell className="w-5 h-5" />
-              </button>
+              <NotificationDropdown />
               <button className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Mail className="w-5 h-5" />
               </button>

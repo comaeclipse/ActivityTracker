@@ -41,6 +41,18 @@ export async function POST(
         },
       });
 
+      // Remove notification if unlike
+      if (activity.userId !== userId) {
+        await prisma.notification.deleteMany({
+          where: {
+            userId: activity.userId,
+            actorId: userId,
+            activityId,
+            type: 'LIKE',
+          }
+        });
+      }
+
       // Get updated like count
       const likeCount = await prisma.activityLike.count({
         where: { activityId },
@@ -60,6 +72,18 @@ export async function POST(
           activityId,
         },
       });
+
+      // Create notification if liking someone else's activity
+      if (activity.userId !== userId) {
+        await prisma.notification.create({
+          data: {
+            userId: activity.userId,
+            actorId: userId,
+            activityId,
+            type: 'LIKE',
+          }
+        });
+      }
 
       // Get updated like count
       const likeCount = await prisma.activityLike.count({
