@@ -17,15 +17,15 @@ type FeedItem = {
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; iconColor: string; iconBg: string }> = {
   RUN:       { icon: TrendingUp, iconColor: 'text-primary',     iconBg: 'bg-primary/10'  },
-  WALK:      { icon: TrendingUp, iconColor: 'text-blue-600',    iconBg: 'bg-blue-100'    },
-  SWIM:      { icon: Waves,      iconColor: 'text-cyan-600',    iconBg: 'bg-cyan-100'    },
-  WEIGHTS:   { icon: Dumbbell,   iconColor: 'text-purple-600',  iconBg: 'bg-purple-100'  },
-  BIKE:      { icon: Bike,       iconColor: 'text-green-600',   iconBg: 'bg-green-100'   },
-  HYDRATION: { icon: Droplets,   iconColor: 'text-sky-600',     iconBg: 'bg-sky-100'     },
-  ROW:       { icon: Waves,      iconColor: 'text-teal-600',    iconBg: 'bg-teal-100'    },
+  WALK:      { icon: TrendingUp, iconColor: 'text-blue-500',    iconBg: 'bg-blue-500/10' },
+  SWIM:      { icon: Waves,      iconColor: 'text-cyan-500',    iconBg: 'bg-cyan-500/10' },
+  WEIGHTS:   { icon: Dumbbell,   iconColor: 'text-purple-500',  iconBg: 'bg-purple-500/10' },
+  BIKE:      { icon: Bike,       iconColor: 'text-green-500',   iconBg: 'bg-green-500/10' },
+  HYDRATION: { icon: Droplets,   iconColor: 'text-sky-500',     iconBg: 'bg-sky-500/10' },
+  ROW:       { icon: Waves,      iconColor: 'text-teal-500',    iconBg: 'bg-teal-500/10' },
 };
 
-const DEFAULT_CONFIG = { icon: Zap, iconColor: 'text-yellow-600', iconBg: 'bg-yellow-100' };
+const DEFAULT_CONFIG = { icon: Zap, iconColor: 'text-yellow-500', iconBg: 'bg-yellow-500/10' };
 
 function relativeTime(dateStr: string): string {
   const diffMs = Date.now() - new Date(dateStr).getTime();

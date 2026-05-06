@@ -39,7 +39,7 @@ export default function StatsCards() {
             <p className="text-sm font-medium text-muted-foreground">Calories Burned</p>
             <p className="text-2xl font-bold text-foreground mt-1">3,852</p>
           </div>
-          <div className="p-3 rounded-lg bg-yellow-100 text-yellow-600">
+          <div className="p-3 rounded-lg bg-yellow-500/10 text-yellow-500">
             <Zap className="w-5 h-5" />
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function StatsCards() {
             <p className="text-sm font-medium text-muted-foreground">Current Streak</p>
             <p className="text-2xl font-bold text-foreground mt-1">9 days</p>
           </div>
-          <div className="p-3 rounded-lg bg-purple-100 text-purple-600">
+          <div className="p-3 rounded-lg bg-purple-500/10 text-purple-500">
             <Award className="w-5 h-5" />
           </div>
         </div>
