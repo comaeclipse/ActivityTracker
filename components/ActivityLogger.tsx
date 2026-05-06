@@ -96,7 +96,7 @@ export default function ActivityLogger() {
 
   return (
     <div
-      className={`bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg transition-all duration-500 ease-in-out overflow-hidden ${expanded ? 'p-5' : 'p-3'}`}
+      className={`bg-gradient-to-br from-blue-600 to-blue-700 dark:from-card dark:to-card dark:border dark:border-border rounded-xl shadow-lg transition-all duration-500 ease-in-out overflow-hidden ${expanded ? 'p-5' : 'p-3'}`}
       style={{ maxHeight: expanded ? '900px' : '68px' }}
     >
 
@@ -104,7 +104,7 @@ export default function ActivityLogger() {
       {level === 'collapsed' && (
         <button
           onClick={() => setLevel('category')}
-          className="w-full bg-white text-blue-700 rounded-lg py-2 px-4 font-semibold flex items-center justify-center gap-2 active:bg-blue-50 transition"
+          className="w-full bg-white text-blue-700 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80 rounded-lg py-2 px-4 font-semibold flex items-center justify-center gap-2 active:bg-blue-50 dark:active:bg-muted/60 transition"
         >
           <Plus className="w-5 h-5" />
           Log workout
@@ -115,29 +115,29 @@ export default function ActivityLogger() {
       {level === 'category' && (
         <div className="space-y-4 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white">What would you like to log?</h3>
-            <button onClick={reset} className="text-white/70 hover:text-white transition">
+            <h3 className="text-base font-bold text-white dark:text-foreground">What would you like to log?</h3>
+            <button onClick={reset} className="text-white/70 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition">
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => setLevel('strength')}
-              className="py-7 rounded-xl border-2 border-blue-400/50 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-semibold text-sm transition flex flex-col items-center gap-2"
+              className="py-7 rounded-xl border-2 border-blue-400/50 dark:border-border bg-white/10 dark:bg-muted hover:bg-white/20 dark:hover:bg-muted/80 active:bg-white/30 text-white dark:text-foreground font-semibold text-sm transition flex flex-col items-center gap-2"
             >
               <Dumbbell className="w-6 h-6" />
               Strength
             </button>
             <button
               onClick={() => setLevel('cardio')}
-              className="py-7 rounded-xl border-2 border-blue-400/50 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-semibold text-sm transition flex flex-col items-center gap-2"
+              className="py-7 rounded-xl border-2 border-blue-400/50 dark:border-border bg-white/10 dark:bg-muted hover:bg-white/20 dark:hover:bg-muted/80 active:bg-white/30 text-white dark:text-foreground font-semibold text-sm transition flex flex-col items-center gap-2"
             >
               <Activity className="w-6 h-6" />
               Cardio
             </button>
             <button
               onClick={() => setLevel('calisthenics')}
-              className="py-7 rounded-xl border-2 border-blue-400/50 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-semibold text-sm transition flex flex-col items-center gap-2"
+              className="py-7 rounded-xl border-2 border-blue-400/50 dark:border-border bg-white/10 dark:bg-muted hover:bg-white/20 dark:hover:bg-muted/80 active:bg-white/30 text-white dark:text-foreground font-semibold text-sm transition flex flex-col items-center gap-2"
             >
               <Zap className="w-6 h-6" />
               Calisthenics
@@ -164,7 +164,7 @@ export default function ActivityLogger() {
           <FormHeader title="Cardio" onBack={() => setLevel('category')} onClose={reset} />
           <DateField value={activityDate} onChange={setActivityDate} />
           <div>
-            <label className="text-xs font-medium text-white/80 mb-1.5 block">Type (optional)</label>
+            <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Type (optional)</label>
             <div className="grid grid-cols-4 gap-2">
               {cardioOptions.map(opt => (
                 <button
@@ -173,8 +173,8 @@ export default function ActivityLogger() {
                   onClick={() => setCardioType(prev => prev === opt.value ? null : opt.value)}
                   className={`py-2 rounded-lg border-2 text-sm font-semibold transition ${
                     cardioType === opt.value
-                      ? 'border-white bg-white text-blue-700'
-                      : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20'
+                      ? 'border-white bg-white text-blue-700 dark:border-primary dark:bg-primary dark:text-primary-foreground'
+                      : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20 dark:border-border dark:bg-muted dark:text-foreground dark:hover:bg-muted/80'
                   }`}
                 >
                   {opt.label}
@@ -215,11 +215,11 @@ export default function ActivityLogger() {
 function FormHeader({ title, onBack, onClose }: { title: string; onBack: () => void; onClose: () => void }) {
   return (
     <div className="flex items-center justify-between">
-      <button onClick={onBack} className="flex items-center gap-1 text-white/80 hover:text-white text-sm font-medium transition">
+      <button onClick={onBack} className="flex items-center gap-1 text-white/80 dark:text-muted-foreground hover:text-white dark:hover:text-foreground text-sm font-medium transition">
         <ChevronLeft className="w-4 h-4" />
         {title}
       </button>
-      <button onClick={onClose} className="text-white/70 hover:text-white transition">
+      <button onClick={onClose} className="text-white/70 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition">
         <X className="w-5 h-5" />
       </button>
     </div>
@@ -234,7 +234,7 @@ function ToggleGroup({ label, options, selected, onToggle }: {
 }) {
   return (
     <div>
-      <label className="text-xs font-medium text-white/80 mb-1.5 block">{label}</label>
+      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">{label}</label>
       <div className="flex flex-wrap gap-2">
         {options.map(opt => (
           <button
@@ -243,8 +243,8 @@ function ToggleGroup({ label, options, selected, onToggle }: {
             onClick={() => onToggle(opt)}
             className={`px-3 py-1.5 rounded-lg border-2 text-sm font-semibold transition ${
               selected.includes(opt)
-                ? 'border-white bg-white text-blue-700'
-                : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20'
+                ? 'border-white bg-white text-blue-700 dark:border-primary dark:bg-primary dark:text-primary-foreground'
+                : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20 dark:border-border dark:bg-muted dark:text-foreground dark:hover:bg-muted/80'
             }`}
           >
             {opt}
@@ -258,11 +258,11 @@ function ToggleGroup({ label, options, selected, onToggle }: {
 function DistanceField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-xs font-medium text-white/80 mb-1.5 block">Distance (miles, optional)</label>
+      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Distance (miles, optional)</label>
       <input
         type="number" min="0" step="0.01" placeholder="3.1"
         value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white text-blue-900 placeholder-blue-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-background text-blue-900 dark:text-foreground placeholder-blue-300 dark:placeholder-muted-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-ring dark:border dark:border-input"
       />
     </div>
   );
@@ -271,10 +271,10 @@ function DistanceField({ value, onChange }: { value: string; onChange: (v: strin
 function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-xs font-medium text-white/80 mb-1.5 block">Date & time</label>
+      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Date & time</label>
       <input
         type="datetime-local" value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white text-blue-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-background text-blue-900 dark:text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-ring dark:border dark:border-input"
       />
     </div>
   );
@@ -283,11 +283,11 @@ function DateField({ value, onChange }: { value: string; onChange: (v: string) =
 function NotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-xs font-medium text-white/80 mb-1.5 block">Notes (optional)</label>
+      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Notes (optional)</label>
       <textarea
         rows={2} placeholder="How did it feel?"
         value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white text-blue-900 placeholder-blue-300 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-background text-blue-900 dark:text-foreground placeholder-blue-300 dark:placeholder-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-ring dark:border dark:border-input"
       />
     </div>
   );
@@ -299,8 +299,8 @@ function SubmitBtn({ label, disabled, onClick }: { label: string; disabled: bool
       onClick={onClick} disabled={disabled}
       className={`w-full py-2.5 rounded-lg font-semibold text-sm transition ${
         disabled
-          ? 'bg-white/30 text-white/50 cursor-not-allowed'
-          : 'bg-white text-blue-700 hover:bg-blue-50 active:bg-blue-100'
+          ? 'bg-white/30 text-white/50 dark:bg-muted dark:text-muted-foreground cursor-not-allowed'
+          : 'bg-white text-blue-700 hover:bg-blue-50 active:bg-blue-100 dark:bg-primary dark:text-primary-foreground dark:hover:opacity-90'
       }`}
     >
       {label}
