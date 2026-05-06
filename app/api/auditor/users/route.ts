@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
         _count: { select: { activities: true } },
         activities: {
           orderBy: { activityDate: 'desc' },
-          take: 1,
           select: { activityDate: true },
         },
       },
@@ -39,6 +38,7 @@ export async function GET(request: NextRequest) {
       createdAt: u.createdAt,
       activityCount: u._count.activities,
       lastActive: u.activities[0]?.activityDate ?? null,
+      activityDates: [...new Set(u.activities.map((a) => a.activityDate.toISOString().split('T')[0]))],
     }));
 
     return NextResponse.json({ data });
