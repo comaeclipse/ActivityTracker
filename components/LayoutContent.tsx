@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Mail, Menu, LogOut, User, X, Shield, Sun, Moon } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
@@ -14,7 +15,6 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Public routes that don't require authentication
   const publicRoutes = ['/login', '/'];
 
   useEffect(() => {
@@ -23,7 +23,6 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     }
   }, [user, isLoading, router, pathname]);
 
-  // Check loading state FIRST to prevent layout shifts
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -35,10 +34,8 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     );
   }
 
-  // If on login page or index page without user, just render the children without dashboard UI
   if (pathname === '/login' || (pathname === '/' && !user)) {
     if (pathname === '/') {
-      // Simple header for public homepage
       return (
         <div className="min-h-screen">
           <header className="bg-card shadow-sm border-b border-border">
@@ -47,31 +44,88 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                 <Activity className="text-secondary w-6 h-6" />
                 <span className="text-xl font-semibold text-foreground">FitLog</span>
               </div>
-              <a
+              <Link
                 href="/login"
                 className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-95 transition-opacity"
               >
                 Login
-              </a>
+              </Link>
             </div>
           </header>
-          <main className="p-4 md:p-6">
-            {children}
-          </main>
+          <main className="p-4 md:p-6">{children}</main>
         </div>
       );
     }
     return <>{children}</>;
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const navLink = (href: string, label: string, Icon: React.ElementType, active: boolean, onClick?: () => void) => (
+    <Link
+      href={href as any}
+      onClick={onClick}
+      className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+        active ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted'
+      }`}
+    >
+      <Icon className="w-5 h-5 mr-3" />
+      {label}
+    </Link>
+  );
+
+  const sidebarNav = (onClick?: () => void) => (
+    <>
+      {navLink('/', 'Dashboard', Home, pathname === '/', onClick)}
+      {navLink('/profile', 'Profile', User, pathname === '/profile', onClick)}
+      {navLink('/analytics', 'Analytics', TrendingUp, pathname === '/analytics', onClick)}
+      {navLink('/profile/calendar', 'Calendar', Calendar, pathname === '/profile/calendar', onClick)}
+      {navLink('/goals', 'Goals', Award, pathname === '/goals', onClick)}
+      {navLink('/community', 'Community', Users, pathname === '/community', onClick)}
+      {navLink('/settings', 'Settings', Settings, pathname === '/settings', onClick)}
+      {user.role === 'AUDITOR' &&
+        navLink('/auditor', 'Auditor', Shield, pathname.startsWith('/auditor'), onClick)}
+    </>
+  );
+
+  const userFooter = (onClick?: () => void) => (
+    <div className="flex items-center justify-between">
+      <Link
+        href="/profile"
+        onClick={onClick}
+        className="flex items-center flex-1 min-w-0 rounded-md hover:bg-muted transition-colors p-1 -m-1"
+        aria-label="View profile"
+      >
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary mr-3 flex-shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground truncate">{user.username}</p>
+          <p className="text-xs text-muted-foreground">{user.role === 'AUDITOR' ? 'Auditor' : 'Member'}</p>
+        </div>
+      </Link>
+      <button
+        onClick={handleLogout}
+        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+        title="Logout"
+      >
+        <LogOut className="w-4 h-4" />
+      </button>
+    </div>
+  );
+
+  const pageTitle =
+    pathname === '/profile' ? 'Profile' :
+    pathname === '/analytics' ? 'Analytics' :
+    pathname === '/community' ? 'Community' :
+    pathname === '/goals' ? 'Goals' :
+    pathname === '/settings' ? 'Settings' :
+    pathname.startsWith('/auditor') ? 'Auditor' :
+    'Dashboard';
 
   return (
     <div className="min-h-screen flex">
@@ -84,97 +138,10 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
           </div>
         </div>
         <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
-          <a
-            href="/"
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-              pathname === '/'
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            <Home className="w-5 h-5 mr-3" />
-            Dashboard
-          </a>
-          <a
-            href="/profile"
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-              pathname === '/profile'
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            <User className="w-5 h-5 mr-3" />
-            Profile
-          </a>
-          <a
-            href="/analytics"
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-              pathname === '/analytics'
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            <TrendingUp className="w-5 h-5 mr-3" />
-            Analytics
-          </a>
-          <a href="/profile/calendar" className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-            <Calendar className="w-5 h-5 mr-3" />
-            Calendar
-          </a>
-          <a href="/goals" className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-            <Award className="w-5 h-5 mr-3" />
-            Goals
-          </a>
-          <a href="/community" className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-            <Users className="w-5 h-5 mr-3" />
-            Community
-          </a>
-          <a
-            href="/settings"
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-              pathname === '/settings'
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            <Settings className="w-5 h-5 mr-3" />
-            Settings
-          </a>
-          {user.role === 'AUDITOR' && (
-            <a
-              href="/auditor"
-              className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                pathname.startsWith('/auditor')
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              <Shield className="w-5 h-5 mr-3" />
-              Auditor
-            </a>
-          )}
+          {sidebarNav()}
         </nav>
         <div className="p-4 border-t border-border">
-          <div className="flex items-center justify-between">
-            <a
-              href="/profile"
-              className="flex items-center flex-1 min-w-0 rounded-md hover:bg-muted transition-colors p-1 -m-1"
-              aria-label="View profile"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary mr-3 flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate">{user.username}</p>
-                <p className="text-xs text-muted-foreground">{user.role === 'AUDITOR' ? 'Auditor' : 'Member'}</p>
-              </div>
-            </a>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          {userFooter()}
         </div>
       </aside>
 
@@ -209,144 +176,26 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         {/* Mobile menu overlay */}
         {isMobileMenuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/50"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-
-            {/* Menu panel */}
-            <div className="absolute inset-y-0 left-0 w-64 bg-card shadow-xl">
-              <div className="flex flex-col h-full">
-                {/* Header */}
-                <div className="flex items-center justify-between h-16 px-4 border-b border-border">
-                  <div className="flex items-center space-x-2">
-                    <Activity className="text-secondary w-6 h-6" />
-                    <span className="text-xl font-semibold text-foreground">FitLog</span>
-                  </div>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                    aria-label="Close menu"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+            <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="absolute inset-y-0 left-0 w-64 bg-card shadow-xl flex flex-col">
+              <div className="flex items-center justify-between h-16 px-4 border-b border-border">
+                <div className="flex items-center space-x-2">
+                  <Activity className="text-secondary w-6 h-6" />
+                  <span className="text-xl font-semibold text-foreground">FitLog</span>
                 </div>
-
-                {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                  <a
-                    href="/"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                      pathname === '/'
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <Home className="w-5 h-5 mr-3" />
-                    Dashboard
-                  </a>
-                  <a
-                    href="/profile"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                      pathname === '/profile'
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <User className="w-5 h-5 mr-3" />
-                    Profile
-                  </a>
-                  <a
-                    href="/analytics"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                      pathname === '/analytics'
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <TrendingUp className="w-5 h-5 mr-3" />
-                    Analytics
-                  </a>
-                  <a
-                    href="/profile/calendar"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    <Calendar className="w-5 h-5 mr-3" />
-                    Calendar
-                  </a>
-                  <a
-                    href="/goals"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    <Award className="w-5 h-5 mr-3" />
-                    Goals
-                  </a>
-                  <a
-                    href="/community"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    <Users className="w-5 h-5 mr-3" />
-                    Community
-                  </a>
-                  <a
-                    href="/settings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                      pathname === '/settings'
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <Settings className="w-5 h-5 mr-3" />
-                    Settings
-                  </a>
-                  {user.role === 'AUDITOR' && (
-                    <a
-                      href="/auditor"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                        pathname.startsWith('/auditor')
-                          ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:bg-muted'
-                      }`}
-                    >
-                      <Shield className="w-5 h-5 mr-3" />
-                      Auditor
-                    </a>
-                  )}
-                </nav>
-
-                {/* User profile footer */}
-                <div className="p-4 border-t border-border">
-                  <div className="flex items-center justify-between">
-                    <a
-                      href="/profile"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center flex-1 min-w-0 rounded-md hover:bg-muted transition-colors p-1 -m-1"
-                      aria-label="View profile"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary mr-3 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground truncate">{user.username}</p>
-                        <p className="text-xs text-muted-foreground">{user.role === 'AUDITOR' ? 'Auditor' : 'Member'}</p>
-                      </div>
-                    </a>
-                    <button
-                      onClick={handleLogout}
-                      className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-                      title="Logout"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                {sidebarNav(() => setIsMobileMenuOpen(false))}
+              </nav>
+              <div className="p-4 border-t border-border">
+                {userFooter(() => setIsMobileMenuOpen(false))}
               </div>
             </div>
           </div>
@@ -355,9 +204,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         {/* Desktop header */}
         <header className="bg-card shadow-sm hidden md:block border-b border-border">
           <div className="flex items-center justify-between px-6 py-4">
-            <h1 className="text-2xl font-bold text-foreground">
-              {pathname === '/profile' ? 'Profile' : pathname === '/analytics' ? 'Analytics' : pathname.startsWith('/auditor') ? 'Auditor' : pathname === '/settings' ? 'Settings' : 'Dashboard'}
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
             <div className="flex items-center space-x-4">
               <NotificationDropdown />
               <button className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -370,15 +217,15 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               >
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <div className="h-8 w-px bg-border"></div>
-            <a
-              href="/profile"
-              className="flex items-center rounded-md hover:bg-muted transition-colors p-1 -m-1"
-              aria-label="View profile"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary mr-2" />
-              <span className="text-sm font-medium text-foreground">{user.username}</span>
-            </a>
+              <div className="h-8 w-px bg-border" />
+              <Link
+                href="/profile"
+                className="flex items-center rounded-md hover:bg-muted transition-colors p-1 -m-1"
+                aria-label="View profile"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary mr-2" />
+                <span className="text-sm font-medium text-foreground">{user.username}</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -390,7 +237,6 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
           </div>
         </header>
 
-        {/* Main content area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
