@@ -122,7 +122,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             <Award className="w-5 h-5 mr-3" />
             Goals
           </a>
-          <a href="#" className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+          <a href="/community" className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
             <Users className="w-5 h-5 mr-3" />
             Community
           </a>
@@ -269,7 +269,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                     Goals
                   </a>
                   <a
-                    href="#"
+                    href="/community"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
                   >
