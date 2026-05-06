@@ -481,42 +481,42 @@ export default function SettingsPage() {
         </SectionCard>
 
         {/* ── Danger zone ── */}
-        <div className="bg-card border border-red-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-red-200 bg-red-50/50">
-            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-red-600" />
+        <div className="bg-card border border-red-200 dark:border-red-900/50 rounded-xl overflow-hidden shadow-sm">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10">
+            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-500" />
             </div>
-            <h2 className="font-semibold text-red-700">Danger Zone</h2>
+            <h2 className="font-semibold text-red-700 dark:text-red-500">Danger Zone</h2>
           </div>
           <div className="p-6 space-y-3">
             <button
               id="wipe-history-btn"
               onClick={() => setShowWipeModal(true)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-red-200 hover:bg-red-50 transition-colors group"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
             >
               <div className="flex items-center gap-3">
-                <Trash2 className="w-4 h-4 text-red-500 group-hover:text-red-600 transition-colors" />
+                <Trash2 className="w-4 h-4 text-red-500 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors" />
                 <div className="text-left">
-                  <p className="text-sm font-medium text-red-700">Wipe Activity History</p>
-                  <p className="text-xs text-red-500/80">Permanently delete all activities, weight logs, and goals</p>
+                  <p className="text-sm font-medium text-red-700 dark:text-red-500">Wipe Activity History</p>
+                  <p className="text-xs text-red-500/80 dark:text-red-400/80">Permanently delete all activities, weight logs, and goals</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-red-400" />
+              <ChevronRight className="w-4 h-4 text-red-400 dark:text-red-600" />
             </button>
 
             <button
               id="delete-account-btn"
               onClick={() => setShowDeleteModal(true)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 transition-colors group"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors group"
             >
               <div className="flex items-center gap-3">
-                <AlertTriangle className="w-4 h-4 text-red-600 group-hover:text-red-700 transition-colors" />
+                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-500 group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors" />
                 <div className="text-left">
-                  <p className="text-sm font-medium text-red-700 font-semibold">Delete Account</p>
-                  <p className="text-xs text-red-500/80">Permanently remove your account and all data</p>
+                  <p className="text-sm font-medium text-red-700 dark:text-red-500 font-semibold">Delete Account</p>
+                  <p className="text-xs text-red-500/80 dark:text-red-400/80">Permanently remove your account and all data</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-red-400" />
+              <ChevronRight className="w-4 h-4 text-red-400 dark:text-red-600" />
             </button>
           </div>
         </div>
