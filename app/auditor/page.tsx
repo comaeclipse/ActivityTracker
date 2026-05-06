@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Shield, Users, Activity, ChevronRight, Calendar } from 'lucide-react';
+import { Shield, Users, Activity, ChevronRight, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
 
 type UserRow = {
   id: string;
@@ -13,8 +14,27 @@ type UserRow = {
   createdAt: string;
   activityCount: number;
   lastActive: string | null;
+  activityDates: string[];
 };
 
+// Parse "YYYY-MM-DD" into a local Date (avoids UTC midnight → previous day shift)
+function parseDateStr(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function UserCalendar({ dates }: { dates: string[] }) {
+  const workoutDates = dates.map(parseDateStr);
+  return (
+    <Calendar
+      modifiers={{ workout: workoutDates }}
+      modifiersClassNames={{
+        workout: '!bg-blue-500 !text-white rounded-full hover:!bg-blue-600 focus:!bg-blue-600',
+      }}
+      defaultMonth={workoutDates.at(-1) ?? new Date()}
+    />
+  );
+}
 
 export default function AuditorDashboard() {
   const { user, isLoading } = useAuth();
@@ -83,7 +103,7 @@ export default function AuditorDashboard() {
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <CalendarDays className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Active Users</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{activeUsers}</p>
@@ -146,6 +166,38 @@ export default function AuditorDashboard() {
           </div>
         )}
       </div>
+
+      {/* Activity Calendars */}
+      {!loading && !error && filtered.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground">Activity Calendars</h2>
+            <span className="text-xs text-muted-foreground ml-1">
+              — blue dates are logged workouts
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((u) => (
+              <div
+                key={u.id}
+                className="bg-card border border-border rounded-xl overflow-hidden"
+              >
+                <div className="px-4 pt-4 pb-2 flex items-center gap-3 border-b border-border">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{u.username}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {u.activityCount} activit{u.activityCount !== 1 ? 'ies' : 'y'}
+                    </p>
+                  </div>
+                </div>
+                <UserCalendar dates={u.activityDates} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

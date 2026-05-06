@@ -1,109 +1,145 @@
-import { TrendingUp, Clock, Award, Zap, Heart } from 'lucide-react';
+'use client';
 
-type Activity = {
+import { useState, useEffect } from 'react';
+import { TrendingUp, Zap, Heart, Droplets, Dumbbell, Bike, Waves } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+
+type FeedItem = {
   id: string;
-  user: string;
-  content: string;
-  time: string;
-  details: string;
-  icon: 'trending' | 'clock' | 'award' | 'zap' | 'heart';
-  iconColor: string;
-  iconBg: string;
+  user: { id: string; username: string };
+  type: string;
+  value: number | null;
+  unit: string | null;
+  durationMinutes: number | null;
+  notes: string | null;
+  activityDate: string;
 };
 
-const MOCK: Activity[] = [
-  {
-    id: '1',
-    user: 'Sarah Johnson',
-    content: 'ran 5 miles',
-    time: '2h ago',
-    details: 'Completed in 42 minutes • 580 calories burned',
-    icon: 'trending',
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary/10'
-  },
-  {
-    id: '2',
-    user: 'Mike Smith',
-    content: 'played racquetball',
-    time: '4h ago',
-    details: '45 minutes • 420 calories burned',
-    icon: 'clock',
-    iconColor: 'text-secondary',
-    iconBg: 'bg-secondary/10'
-  },
-  {
-    id: '3',
-    user: 'You',
-    content: 'completed a new personal record!',
-    time: '6h ago',
-    details: 'Ran 10K in 48 minutes 32 seconds',
-    icon: 'award',
-    iconColor: 'text-purple-600',
-    iconBg: 'bg-purple-100'
-  },
-  {
-    id: '4',
-    user: 'Lisa Chen',
-    content: 'did HIIT Workout',
-    time: '8h ago',
-    details: '30 minutes • 350 calories burned',
-    icon: 'zap',
-    iconColor: 'text-yellow-600',
-    iconBg: 'bg-yellow-100'
-  },
-  {
-    id: '5',
-    user: 'David Wilson',
-    content: 'cycled 15 miles',
-    time: 'Yesterday',
-    details: '55 minutes • 720 calories burned',
-    icon: 'heart',
-    iconColor: 'text-green-600',
-    iconBg: 'bg-green-100'
-  },
-];
-
-const iconMap = {
-  trending: TrendingUp,
-  clock: Clock,
-  award: Award,
-  zap: Zap,
-  heart: Heart,
+const TYPE_CONFIG: Record<string, { icon: React.ElementType; iconColor: string; iconBg: string }> = {
+  RUN:       { icon: TrendingUp, iconColor: 'text-primary',     iconBg: 'bg-primary/10'  },
+  WALK:      { icon: TrendingUp, iconColor: 'text-blue-600',    iconBg: 'bg-blue-100'    },
+  SWIM:      { icon: Waves,      iconColor: 'text-cyan-600',    iconBg: 'bg-cyan-100'    },
+  WEIGHTS:   { icon: Dumbbell,   iconColor: 'text-purple-600',  iconBg: 'bg-purple-100'  },
+  BIKE:      { icon: Bike,       iconColor: 'text-green-600',   iconBg: 'bg-green-100'   },
+  HYDRATION: { icon: Droplets,   iconColor: 'text-sky-600',     iconBg: 'bg-sky-100'     },
+  ROW:       { icon: Waves,      iconColor: 'text-teal-600',    iconBg: 'bg-teal-100'    },
 };
+
+const DEFAULT_CONFIG = { icon: Zap, iconColor: 'text-yellow-600', iconBg: 'bg-yellow-100' };
+
+function relativeTime(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function formatContent(type: string, value: number | null, unit: string | null): string {
+  const val = value != null ? `${value} ${unit ?? ''}`.trim() : '';
+  switch (type) {
+    case 'RUN':       return val ? `ran ${val}` : 'went for a run';
+    case 'WALK':      return val ? `walked ${val}` : 'went for a walk';
+    case 'SWIM':      return val ? `swam ${val}` : 'went swimming';
+    case 'WEIGHTS':   return 'did a weights workout';
+    case 'BIKE':      return val ? `cycled ${val}` : 'went cycling';
+    case 'HYDRATION': return val ? `logged ${val} of water` : 'logged hydration';
+    case 'ROW':       return val ? `rowed ${val}` : 'went rowing';
+    default:          return 'logged an activity';
+  }
+}
+
+function formatDetails(durationMinutes: number | null, notes: string | null): string {
+  const parts: string[] = [];
+  if (durationMinutes) parts.push(`${durationMinutes} min`);
+  if (notes) parts.push(notes);
+  return parts.join(' • ');
+}
 
 export default function ActivityFeed() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<FeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ take: '5' });
+    if (user?.id) params.set('currentUserId', user.id);
+
+    fetch(`/api/feed?${params}`)
+      .then((r) => r.json())
+      .then((json) => { setItems(json.data ?? []); })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [user?.id]);
+
   return (
     <div className="bg-card rounded-xl shadow-sm overflow-hidden border border-border">
       <div className="px-5 py-4 border-b border-border">
         <h2 className="text-lg font-semibold text-foreground">Recent Activities</h2>
       </div>
+
       <div className="divide-y divide-border">
-        {MOCK.map((a) => {
-          const Icon = iconMap[a.icon];
+        {loading && (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="px-5 py-4 flex items-center gap-4 animate-pulse">
+              <div className="w-9 h-9 rounded-lg bg-muted shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 bg-muted rounded w-2/3" />
+                <div className="h-3 bg-muted rounded w-1/2" />
+              </div>
+            </div>
+          ))
+        )}
+
+        {!loading && error && (
+          <p className="px-5 py-6 text-sm text-muted-foreground text-center">
+            Failed to load activities.
+          </p>
+        )}
+
+        {!loading && !error && items.length === 0 && (
+          <p className="px-5 py-6 text-sm text-muted-foreground text-center">
+            No activities yet. Log your first one above!
+          </p>
+        )}
+
+        {!loading && !error && items.map((a) => {
+          const config = TYPE_CONFIG[a.type] ?? DEFAULT_CONFIG;
+          const Icon = config.icon;
+          const displayName = user && a.user.id === user.id ? 'You' : a.user.username;
+          const details = formatDetails(a.durationMinutes, a.notes);
+
           return (
             <div
               key={a.id}
               className="transition-all duration-200 ease-in-out px-5 py-4 hover:bg-muted/50 hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
             >
               <div className="flex items-center">
-                <div className={`p-2 rounded-lg ${a.iconBg} ${a.iconColor} mr-4`}>
+                <div className={`p-2 rounded-lg ${config.iconBg} ${config.iconColor} mr-4 shrink-0`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-foreground">
-                      {a.user} {a.content}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium text-foreground truncate">
+                      {displayName} {formatContent(a.type, a.value, a.unit)}
                     </p>
-                    <span className="text-xs text-muted-foreground">{a.time}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{relativeTime(a.activityDate)}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{a.details}</p>
+                  {details && (
+                    <p className="text-sm text-muted-foreground mt-1 truncate">{details}</p>
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
       <div className="px-5 py-3 border-t border-border text-center">
         <button className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
           View all activities
