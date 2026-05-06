@@ -405,7 +405,7 @@ export default function AnalyticsPage() {
               <p className="text-sm font-medium text-muted-foreground">Current Streak</p>
               <p className="text-2xl font-bold text-foreground mt-1">{currentStreak} days</p>
             </div>
-            <div className="p-3 rounded-lg bg-orange-100 text-orange-500">
+            <div className="p-3 rounded-lg bg-orange-500/10 text-orange-500">
               <Flame className="w-5 h-5" />
             </div>
           </div>
@@ -459,7 +459,7 @@ export default function AnalyticsPage() {
               <p className="text-sm font-medium text-muted-foreground">Active Days</p>
               <p className="text-2xl font-bold text-foreground mt-1">{activeDays}</p>
             </div>
-            <div className="p-3 rounded-lg bg-purple-100 text-purple-600">
+            <div className="p-3 rounded-lg bg-purple-500/10 text-purple-500">
               <Award className="w-5 h-5" />
             </div>
           </div>
@@ -479,7 +479,7 @@ export default function AnalyticsPage() {
             </div>
             {weeklyChangePct != null && (
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${
-                Number(weeklyChangePct) >= 0 ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50'
+                Number(weeklyChangePct) >= 0 ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'
               }`}>
                 <TrendingUp className="w-3.5 h-3.5" />
                 {Number(weeklyChangePct) >= 0 ? '+' : ''}{weeklyChangePct}%
@@ -530,7 +530,7 @@ export default function AnalyticsPage() {
               <p className="text-xs text-muted-foreground">Total active minutes per month</p>
             </div>
             {isMonthlyHigh && (
-              <span className="text-xs text-green-500 font-medium bg-green-50 px-2 py-1 rounded-md">
+              <span className="text-xs text-green-500 font-medium bg-green-500/10 px-2 py-1 rounded-md">
                 All-time high ↑
               </span>
             )}
