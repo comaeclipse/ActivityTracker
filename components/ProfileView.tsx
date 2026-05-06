@@ -4,7 +4,8 @@ import { useState } from 'react';
 import UserActivityList from '@/components/UserActivityList';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Calendar, Link, Check } from 'lucide-react';
+import { Calendar, Link, Check } from 'lucide-react';
+import { getUserGradient } from '@/lib/utils';
 
 interface ProfileViewProps {
   userId: string;
@@ -43,8 +44,8 @@ export default function ProfileView({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full ${getUserGradient(username)} flex-shrink-0`} />
               {isOwnProfile ? 'Your Profile' : `${username}'s Profile`}
             </CardTitle>
             <Button

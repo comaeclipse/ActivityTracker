@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { ArrowLeft, Download, FileText, User, Activity, Calendar, Filter } from 'lucide-react';
 import { format } from 'date-fns';
+import { getUserGradient } from '@/lib/utils';
 
 import type { ActivityRecord } from '@/lib/fitness-pdf-generator';
 
@@ -131,7 +132,7 @@ export default function UserSnapshotPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex-shrink-0" />
+            <div className={`w-12 h-12 rounded-full ${getUserGradient(targetUser?.username || '')} flex-shrink-0`} />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-foreground">

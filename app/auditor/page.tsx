@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Shield, Users, Activity, ChevronRight, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
+import { getUserGradient } from '@/lib/utils';
 
 type UserRow = {
   id: string;
@@ -138,7 +139,7 @@ export default function AuditorDashboard() {
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors text-left"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex-shrink-0" />
+                  <div className={`w-9 h-9 rounded-full ${getUserGradient(u.username)} flex-shrink-0`} />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">{u.username}</span>
@@ -184,7 +185,7 @@ export default function AuditorDashboard() {
                 className="bg-card border border-border rounded-xl overflow-hidden"
               >
                 <div className="px-4 pt-4 pb-2 flex items-center gap-3 border-b border-border">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex-shrink-0" />
+                  <div className={`w-8 h-8 rounded-full ${getUserGradient(u.username)} flex-shrink-0`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{u.username}</p>
                     <p className="text-xs text-muted-foreground">

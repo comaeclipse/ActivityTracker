@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Mail, Menu, LogOut, User, X, Shield, Sun, Moon } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
 import { useTheme } from '@/lib/theme-context';
+import { getUserGradient } from '@/lib/utils';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading } = useAuth();
@@ -102,7 +103,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         className="flex items-center flex-1 min-w-0 rounded-md hover:bg-muted transition-colors p-1 -m-1"
         aria-label="View profile"
       >
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary mr-3 flex-shrink-0" />
+        <div className={`w-10 h-10 rounded-full ${getUserGradient(user.username)} mr-3 flex-shrink-0`} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground truncate">{user.username}</p>
           <p className="text-xs text-muted-foreground">{user.role === 'AUDITOR' ? 'Auditor' : 'Member'}</p>
@@ -223,7 +224,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                 className="flex items-center rounded-md hover:bg-muted transition-colors p-1 -m-1"
                 aria-label="View profile"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary mr-2" />
+                <div className={`w-8 h-8 rounded-full ${getUserGradient(user.username)} mr-2`} />
                 <span className="text-sm font-medium text-foreground">{user.username}</span>
               </Link>
               <button
