@@ -3,11 +3,13 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Bell, Mail, Menu, LogOut, User, X, Shield } from 'lucide-react';
+import { Home, TrendingUp, Calendar, Award, Users, Settings, Activity, Mail, Menu, LogOut, User, X, Shield, Sun, Moon } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
+import { useTheme } from '@/lib/theme-context';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -185,13 +187,22 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               <Activity className="text-secondary w-5 h-5" />
               <span className="text-lg font-semibold text-foreground">FitLog</span>
             </div>
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -351,6 +362,13 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               <NotificationDropdown />
               <button className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Mail className="w-5 h-5" />
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <div className="h-8 w-px bg-border"></div>
             <a
