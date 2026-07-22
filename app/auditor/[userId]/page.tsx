@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { ArrowLeft, Download, FileText, User, Activity, Calendar, Filter, ShieldCheck, ShieldOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { getUserGradient } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 import type { ActivityRecord } from '@/lib/fitness-pdf-generator';
 
@@ -139,6 +140,17 @@ export default function UserSnapshotPage() {
   };
 
   const isSelf = user?.id === userId;
+  const activityGroups = activities.reduce<ActivityRow[][]>((groups, activity) => {
+    const previousGroup = groups.at(-1);
+
+    if (previousGroup?.[0].activityDate === activity.activityDate) {
+      previousGroup.push(activity);
+    } else {
+      groups.push([activity]);
+    }
+
+    return groups;
+  }, []);
 
   if (isLoading || !user) return null;
 
@@ -303,11 +315,29 @@ export default function UserSnapshotPage() {
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {activities.map((a) => (
+              {activityGroups.map((group) => {
+                const isLinkedGroup = group.length > 1;
+
+                return (
+                  <tbody key={group[0].id} className="divide-y divide-border">
+                    {isLinkedGroup && (
+                      <tr className="bg-muted/50">
+                        <td colSpan={5} className="px-4 py-2.5">
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <Activity className="h-4 w-4 text-primary" />
+                            <span>Linked workouts</span>
+                            <Badge variant="secondary">{group.length} activities</Badge>
+                            <span className="text-xs font-normal text-muted-foreground">
+                              {format(new Date(group[0].activityDate), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {group.map((a) => (
                   <tr key={a.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 text-foreground whitespace-nowrap">
-                      {format(new Date(a.activityDate), 'MMM d, yyyy')}
+                      {isLinkedGroup ? 'â€”' : format(new Date(a.activityDate), 'MMM d, yyyy')}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${ACTIVITY_COLORS[a.type] ?? 'bg-muted text-muted-foreground border-border'}`}>
@@ -324,8 +354,10 @@ export default function UserSnapshotPage() {
                       {a.notes ?? '—'}
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                    ))}
+                  </tbody>
+                );
+              })}
             </table>
           </div>
         )}
