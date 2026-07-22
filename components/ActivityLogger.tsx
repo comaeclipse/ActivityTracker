@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { Plus, X, Dumbbell, Activity as ActivityIcon, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
 type WType = 'RUN' | 'WALK' | 'BIKE' | 'ROW' | 'WEIGHTS';
@@ -95,9 +94,6 @@ export default function ActivityLogger() {
         ? prev.filter((s) => !(s.category === seg.category && s.label === seg.label))
         : [...prev, seg]
     );
-
-  const remove = (c: string, l: string) =>
-    setSelected((prev) => prev.filter((s) => !(s.category === c && s.label === l)));
 
   const hasDistance = selected.some((s) => s.type === 'RUN' || s.type === 'WALK');
 
@@ -253,36 +249,6 @@ export default function ActivityLogger() {
           onChange={(e) => setNotes(e.target.value)}
           className="w-full px-3 py-2 rounded-md border border-input bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-      </div>
-
-      {/* Preview */}
-      <div className="rounded-lg border border-border bg-muted/40 p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">Logging:</span>
-          {selected.length === 0 ? (
-            <span className="text-sm text-muted-foreground">pick one or more activities above</span>
-          ) : (
-            selected.map((seg) => (
-              <Badge
-                key={`${seg.category}:${seg.label}`}
-                variant="secondary"
-                className="gap-1 pl-2.5 pr-1 py-1"
-              >
-                <span className="text-muted-foreground">{seg.category}</span>
-                <span aria-hidden>→</span>
-                <span>{seg.label}</span>
-                <button
-                  type="button"
-                  onClick={() => remove(seg.category, seg.label)}
-                  className="ml-0.5 rounded-full hover:bg-background/60 p-0.5"
-                  aria-label={`Remove ${seg.category} ${seg.label}`}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))
-          )}
-        </div>
       </div>
 
       {message && (
