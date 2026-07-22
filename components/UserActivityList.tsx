@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart } from 'lucide-react';
+import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import ActivityMap from '@/components/ActivityMap';
 
@@ -90,6 +90,10 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Only the owner viewing their own list can delete.
+  const canDelete = currentUser?.id === userId;
 
   useEffect(() => {
     async function fetchActivities() {
@@ -165,6 +169,32 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
       }
     } catch (err: any) {
       console.error('Error toggling like:', err);
+    }
+  };
+
+  const handleDelete = async (activityId: string) => {
+    if (!currentUser) return;
+    if (!window.confirm('Delete this activity? This cannot be undone.')) return;
+
+    setDeletingId(activityId);
+    try {
+      const response = await fetch(
+        `/api/activities/${activityId}?userId=${currentUser.id}`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete activity');
+      }
+
+      // Remove from the list once the server confirms it's gone.
+      setActivities(prev => prev.filter(a => a.id !== activityId));
+    } catch (err: any) {
+      console.error('Error deleting activity:', err);
+      alert(err.message || 'Failed to delete activity. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -296,6 +326,21 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
                       )}
                     </div>
                   </div>
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDelete(activity.id)}
+                      disabled={deletingId === activity.id}
+                      title="Delete activity"
+                      aria-label="Delete activity"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      {deletingId === activity.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             );
