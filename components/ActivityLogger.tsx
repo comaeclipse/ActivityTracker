@@ -1,317 +1,310 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, X, ChevronLeft, Dumbbell, Activity, Zap } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Plus, X, Dumbbell, Activity as ActivityIcon, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
-type Level = 'collapsed' | 'category' | 'strength' | 'cardio' | 'calisthenics';
-type CardioType = 'RUN' | 'WALK' | 'BIKE' | 'ROW';
+type WType = 'RUN' | 'WALK' | 'BIKE' | 'ROW' | 'WEIGHTS';
 
-const strengthOptions = ['Push', 'Pull', 'Legs', 'Core', 'Full Body'];
-const calisthenicsOptions = ['Push-ups', 'Pull-ups', 'Yoga', 'Squats', 'Core'];
+interface SubItem {
+  label: string;
+  type: WType;
+}
 
-const cardioOptions: { value: CardioType; label: string }[] = [
-  { value: 'RUN',  label: 'Run'  },
-  { value: 'WALK', label: 'Walk' },
-  { value: 'BIKE', label: 'Bike' },
-  { value: 'ROW',  label: 'Row'  },
+interface Group {
+  category: string;
+  icon: (props: { className?: string }) => ReactNode;
+  items: SubItem[];
+}
+
+// One universal logger. Every category resolves to a concrete activity type,
+// but the user just picks what they did — no separate "log strength" flows.
+const GROUPS: Group[] = [
+  {
+    category: 'Strength',
+    icon: Dumbbell,
+    items: ['Push', 'Pull', 'Legs', 'Core', 'Full Body'].map((label) => ({
+      label,
+      type: 'WEIGHTS' as WType,
+    })),
+  },
+  {
+    category: 'Cardio',
+    icon: ActivityIcon,
+    items: [
+      { label: 'Run', type: 'RUN' },
+      { label: 'Walk', type: 'WALK' },
+      { label: 'Bike', type: 'BIKE' },
+      { label: 'Row', type: 'ROW' },
+    ],
+  },
+  {
+    category: 'Calisthenics',
+    icon: Zap,
+    items: ['Push-ups', 'Pull-ups', 'Yoga', 'Squats', 'Core'].map((label) => ({
+      label,
+      type: 'WEIGHTS' as WType,
+    })),
+  },
 ];
+
+interface Segment {
+  category: string;
+  label: string;
+  type: WType;
+}
+
+function nowLocal() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
 
 export default function ActivityLogger() {
   const { user } = useAuth();
 
-  const [level, setLevel]                       = useState<Level>('collapsed');
-  const [cardioType, setCardioType]             = useState<CardioType | null>(null);
-  const [strengthFocus, setStrengthFocus]       = useState<string[]>([]);
-  const [calisthenicsFocus, setCalisthenicsFocus] = useState<string[]>([]);
-  const [distance, setDistance]                 = useState('');
-  const [notes, setNotes]                       = useState('');
-  const [activityDate, setActivityDate]         = useState(nowLocal);
-  const [isSubmitting, setIsSubmitting]         = useState(false);
-  const [message, setMessage]                   = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Segment[]>([]);
+  const [activityDate, setActivityDate] = useState(nowLocal);
+  const [distance, setDistance] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  function nowLocal() {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  }
+  if (!user) return null;
 
   const reset = () => {
-    setLevel('collapsed');
-    setCardioType(null);
-    setStrengthFocus([]);
-    setCalisthenicsFocus([]);
+    setOpen(false);
+    setSelected([]);
     setDistance('');
     setNotes('');
     setMessage(null);
     setActivityDate(nowLocal());
   };
 
-  const toggleStrength     = (opt: string) =>
-    setStrengthFocus(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
+  const isSelected = (c: string, l: string) =>
+    selected.some((s) => s.category === c && s.label === l);
 
-  const toggleCalisthenics = (opt: string) =>
-    setCalisthenicsFocus(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
+  const toggle = (seg: Segment) =>
+    setSelected((prev) =>
+      prev.some((s) => s.category === seg.category && s.label === seg.label)
+        ? prev.filter((s) => !(s.category === seg.category && s.label === seg.label))
+        : [...prev, seg]
+    );
 
-  const buildNotes = (focus: string[]) => {
-    const focusStr = focus.join(', ');
-    if (focusStr && notes) return `${focusStr} · ${notes}`;
-    return focusStr || notes || undefined;
-  };
+  const remove = (c: string, l: string) =>
+    setSelected((prev) => prev.filter((s) => !(s.category === c && s.label === l)));
 
-  const submit = async (type: string, focus: string[] = []) => {
-    if (!user) return;
+  const hasDistance = selected.some((s) => s.type === 'RUN' || s.type === 'WALK');
+
+  const submit = async () => {
+    if (!selected.length) return;
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const payload: Record<string, unknown> = {
-        userId: user.id,
-        type,
-        activityDate: new Date(activityDate).toISOString(),
-        notes: buildNotes(focus),
-      };
-      if (distance && !isNaN(Number(distance)) && Number(distance) > 0) {
-        payload.value = Number(distance);
-        payload.unit  = 'miles';
-      }
-      const res  = await fetch('/api/activities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const iso = new Date(activityDate).toISOString();
+      const dist = distance && Number(distance) > 0 ? Number(distance) : null;
+
+      // One activity per selected segment, sharing the same date/notes.
+      const bodies = selected.map((seg) => {
+        const body: Record<string, unknown> = {
+          userId: user.id,
+          type: seg.type,
+          activityDate: iso,
+          notes: `${seg.category} · ${seg.label}${notes ? ` · ${notes}` : ''}`,
+        };
+        if (dist && (seg.type === 'RUN' || seg.type === 'WALK')) {
+          body.value = dist;
+          body.unit = 'miles';
+        }
+        return body;
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to log activity');
-      setMessage({ type: 'success', text: 'Logged!' });
-      setTimeout(() => { reset(); window.location.reload(); }, 800);
+
+      await Promise.all(
+        bodies.map(async (b) => {
+          const res = await fetch('/api/activities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(b),
+          });
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.error || 'Failed to log activity');
+          }
+        })
+      );
+
+      setMessage({
+        type: 'success',
+        text: `Logged ${bodies.length} activit${bodies.length === 1 ? 'y' : 'ies'}!`,
+      });
+      setTimeout(() => {
+        reset();
+        window.location.reload();
+      }, 800);
     } catch (err: unknown) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to log activity' });
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to log activity',
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!user) return null;
-
-  const expanded = level !== 'collapsed';
+  if (!open) {
+    return (
+      <Button onClick={() => setOpen(true)} size="lg" className="w-full gap-2">
+        <Plus className="w-5 h-5" />
+        Log workout
+      </Button>
+    );
+  }
 
   return (
-    <div
-      className={`bg-gradient-to-br from-blue-600 to-blue-700 dark:from-card dark:to-card dark:border dark:border-border rounded-xl shadow-lg transition-all duration-500 ease-in-out overflow-hidden ${expanded ? 'p-5' : 'p-3'}`}
-      style={{ maxHeight: expanded ? '900px' : '68px' }}
-    >
-
-      {/* ── Collapsed ── */}
-      {level === 'collapsed' && (
+    <div className="bg-card border border-border rounded-xl shadow-sm p-5 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-bold text-foreground">Log workout</h3>
         <button
-          onClick={() => setLevel('category')}
-          className="w-full bg-white text-blue-700 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80 rounded-lg py-2 px-4 font-semibold flex items-center justify-center gap-2 active:bg-blue-50 dark:active:bg-muted/60 transition"
+          onClick={reset}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Close"
         >
-          <Plus className="w-5 h-5" />
-          Log workout
+          <X className="w-5 h-5" />
         </button>
-      )}
+      </div>
 
-      {/* ── Category ── */}
-      {level === 'category' && (
-        <div className="space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white dark:text-foreground">What would you like to log?</h3>
-            <button onClick={reset} className="text-white/70 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              onClick={() => setLevel('strength')}
-              className="py-7 rounded-xl border-2 border-blue-400/50 dark:border-border bg-white/10 dark:bg-muted hover:bg-white/20 dark:hover:bg-muted/80 active:bg-white/30 text-white dark:text-foreground font-semibold text-sm transition flex flex-col items-center gap-2"
-            >
-              <Dumbbell className="w-6 h-6" />
-              Strength
-            </button>
-            <button
-              onClick={() => setLevel('cardio')}
-              className="py-7 rounded-xl border-2 border-blue-400/50 dark:border-border bg-white/10 dark:bg-muted hover:bg-white/20 dark:hover:bg-muted/80 active:bg-white/30 text-white dark:text-foreground font-semibold text-sm transition flex flex-col items-center gap-2"
-            >
-              <Activity className="w-6 h-6" />
-              Cardio
-            </button>
-            <button
-              onClick={() => setLevel('calisthenics')}
-              className="py-7 rounded-xl border-2 border-blue-400/50 dark:border-border bg-white/10 dark:bg-muted hover:bg-white/20 dark:hover:bg-muted/80 active:bg-white/30 text-white dark:text-foreground font-semibold text-sm transition flex flex-col items-center gap-2"
-            >
-              <Zap className="w-6 h-6" />
-              Calisthenics
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Date */}
+      <div>
+        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date &amp; time</label>
+        <Input
+          type="datetime-local"
+          value={activityDate}
+          onChange={(e) => setActivityDate(e.target.value)}
+        />
+      </div>
 
-      {/* ── Strength ── */}
-      {level === 'strength' && (
-        <div className="space-y-4 animate-fadeIn">
-          <FormHeader title="Strength Training" onBack={() => setLevel('category')} onClose={reset} />
-          <DateField value={activityDate} onChange={setActivityDate} />
-          <ToggleGroup label="Focus (optional)" options={strengthOptions} selected={strengthFocus} onToggle={toggleStrength} />
-          <NotesField value={notes} onChange={setNotes} />
-          {message && <StatusMessage {...message} />}
-          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Strength'} disabled={isSubmitting} onClick={() => submit('WEIGHTS', strengthFocus)} />
-        </div>
-      )}
-
-      {/* ── Cardio ── */}
-      {level === 'cardio' && (
-        <div className="space-y-4 animate-fadeIn">
-          <FormHeader title="Cardio" onBack={() => setLevel('category')} onClose={reset} />
-          <DateField value={activityDate} onChange={setActivityDate} />
-          <div>
-            <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Type (optional)</label>
-            <div className="grid grid-cols-4 gap-2">
-              {cardioOptions.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setCardioType(prev => prev === opt.value ? null : opt.value)}
-                  className={`py-2 rounded-lg border-2 text-sm font-semibold transition ${
-                    cardioType === opt.value
-                      ? 'border-white bg-white text-blue-700 dark:border-primary dark:bg-primary dark:text-primary-foreground'
-                      : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20 dark:border-border dark:bg-muted dark:text-foreground dark:hover:bg-muted/80'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+      {/* Category groups */}
+      <div className="space-y-4">
+        {GROUPS.map((group) => {
+          const Icon = group.icon;
+          return (
+            <div key={group.category}>
+              <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Icon className="w-3.5 h-3.5" />
+                {group.category}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((item) => {
+                  const active = isSelected(group.category, item.label);
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() =>
+                        toggle({ category: group.category, label: item.label, type: item.type })
+                      }
+                      aria-pressed={active}
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                        active
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-background text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-          {(cardioType === 'RUN' || cardioType === 'WALK') && (
-            <DistanceField value={distance} onChange={setDistance} />
-          )}
-          <NotesField value={notes} onChange={setNotes} />
-          {message && <StatusMessage {...message} />}
-          <SubmitBtn
-            label={isSubmitting ? 'Logging…' : 'Log Cardio'}
-            disabled={isSubmitting}
-            onClick={() => submit(cardioType ?? 'RUN', [])}
+          );
+        })}
+      </div>
+
+      {/* Distance (only when a distance-based cardio type is picked) */}
+      {hasDistance && (
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+            Distance (miles, optional)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="3.1"
+            value={distance}
+            onChange={(e) => setDistance(e.target.value)}
           />
         </div>
       )}
 
-      {/* ── Calisthenics ── */}
-      {level === 'calisthenics' && (
-        <div className="space-y-4 animate-fadeIn">
-          <FormHeader title="Calisthenics" onBack={() => setLevel('category')} onClose={reset} />
-          <DateField value={activityDate} onChange={setActivityDate} />
-          <ToggleGroup label="Focus (optional)" options={calisthenicsOptions} selected={calisthenicsFocus} onToggle={toggleCalisthenics} />
-          <NotesField value={notes} onChange={setNotes} />
-          {message && <StatusMessage {...message} />}
-          <SubmitBtn label={isSubmitting ? 'Logging…' : 'Log Calisthenics'} disabled={isSubmitting} onClick={() => submit('WEIGHTS', calisthenicsFocus)} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function FormHeader({ title, onBack, onClose }: { title: string; onBack: () => void; onClose: () => void }) {
-  return (
-    <div className="flex items-center justify-between">
-      <button onClick={onBack} className="flex items-center gap-1 text-white/80 dark:text-muted-foreground hover:text-white dark:hover:text-foreground text-sm font-medium transition">
-        <ChevronLeft className="w-4 h-4" />
-        {title}
-      </button>
-      <button onClick={onClose} className="text-white/70 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition">
-        <X className="w-5 h-5" />
-      </button>
-    </div>
-  );
-}
-
-function ToggleGroup({ label, options, selected, onToggle }: {
-  label: string;
-  options: string[];
-  selected: string[];
-  onToggle: (opt: string) => void;
-}) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">{label}</label>
-      <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onToggle(opt)}
-            className={`px-3 py-1.5 rounded-lg border-2 text-sm font-semibold transition ${
-              selected.includes(opt)
-                ? 'border-white bg-white text-blue-700 dark:border-primary dark:bg-primary dark:text-primary-foreground'
-                : 'border-blue-400/50 bg-white/10 text-white hover:bg-white/20 dark:border-border dark:bg-muted dark:text-foreground dark:hover:bg-muted/80'
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
+      {/* Notes */}
+      <div>
+        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Notes (optional)</label>
+        <textarea
+          rows={2}
+          placeholder="How did it feel?"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full px-3 py-2 rounded-md border border-input bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
       </div>
+
+      {/* Preview */}
+      <div className="rounded-lg border border-border bg-muted/40 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">Logging:</span>
+          {selected.length === 0 ? (
+            <span className="text-sm text-muted-foreground">pick one or more activities above</span>
+          ) : (
+            selected.map((seg) => (
+              <Badge
+                key={`${seg.category}:${seg.label}`}
+                variant="secondary"
+                className="gap-1 pl-2.5 pr-1 py-1"
+              >
+                <span className="text-muted-foreground">{seg.category}</span>
+                <span aria-hidden>→</span>
+                <span>{seg.label}</span>
+                <button
+                  type="button"
+                  onClick={() => remove(seg.category, seg.label)}
+                  className="ml-0.5 rounded-full hover:bg-background/60 p-0.5"
+                  aria-label={`Remove ${seg.category} ${seg.label}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))
+          )}
+        </div>
+      </div>
+
+      {message && (
+        <p
+          className={`text-sm font-medium ${
+            message.type === 'success'
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}
+        >
+          {message.text}
+        </p>
+      )}
+
+      {/* Submit */}
+      <Button onClick={submit} disabled={isSubmitting || selected.length === 0} className="w-full">
+        {isSubmitting
+          ? 'Logging…'
+          : selected.length
+          ? `Submit — log ${selected.length} activit${selected.length === 1 ? 'y' : 'ies'}`
+          : 'Submit'}
+      </Button>
     </div>
-  );
-}
-
-function DistanceField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Distance (miles, optional)</label>
-      <input
-        type="number" min="0" step="0.01" placeholder="3.1"
-        value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-background text-blue-900 dark:text-foreground placeholder-blue-300 dark:placeholder-muted-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-ring dark:border dark:border-input"
-      />
-    </div>
-  );
-}
-
-function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Date & time</label>
-      <input
-        type="datetime-local" value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-background text-blue-900 dark:text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-ring dark:border dark:border-input"
-      />
-    </div>
-  );
-}
-
-function NotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-white/80 dark:text-muted-foreground mb-1.5 block">Notes (optional)</label>
-      <textarea
-        rows={2} placeholder="How did it feel?"
-        value={value} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 rounded-lg bg-white dark:bg-background text-blue-900 dark:text-foreground placeholder-blue-300 dark:placeholder-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-ring dark:border dark:border-input"
-      />
-    </div>
-  );
-}
-
-function SubmitBtn({ label, disabled, onClick }: { label: string; disabled: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick} disabled={disabled}
-      className={`w-full py-2.5 rounded-lg font-semibold text-sm transition ${
-        disabled
-          ? 'bg-white/30 text-white/50 dark:bg-muted dark:text-muted-foreground cursor-not-allowed'
-          : 'bg-white text-blue-700 hover:bg-blue-50 active:bg-blue-100 dark:bg-primary dark:text-primary-foreground dark:hover:opacity-90'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function StatusMessage({ type, text }: { type: 'success' | 'error'; text: string }) {
-  return (
-    <p className={`text-sm font-medium ${type === 'success' ? 'text-green-200' : 'text-red-200'}`}>
-      {text}
-    </p>
   );
 }
