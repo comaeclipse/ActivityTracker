@@ -14,6 +14,10 @@ export interface ActivityRecord {
   activityDate: string;
 }
 
+export interface NamedActivityRecord extends ActivityRecord {
+  username: string;
+}
+
 interface ReportOptions {
   username?: string;
   startDate?: string;
@@ -84,6 +88,180 @@ export function generateActivityLogPDF(
     },
     margin: { top: startY, left: 14, right: 14 },
   });
+
+  return doc;
+}
+
+// Local-day key ("YYYY-MM-DD") from an ISO/date string, using local time so a
+// workout logged at 11pm doesn't shift into the next UTC day.
+function localDayKey(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return format(d, 'yyyy-MM-dd');
+}
+
+function parseLocalDay(key: string): Date {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function lastY(doc: jsPDF): number {
+  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+}
+
+function activityValue(a: ActivityRecord): string {
+  return a.value !== null ? `${a.value} ${a.unit ?? ''}`.trim() : '—';
+}
+
+function activityDuration(a: ActivityRecord): string {
+  return a.durationMinutes !== null ? `${a.durationMinutes} min` : '—';
+}
+
+/**
+ * One block per calendar day (chronological). Each block lists every user's
+ * workouts for that day.
+ */
+export function generateByDayPDF(
+  activities: NamedActivityRecord[],
+  options: ReportOptions = {}
+): jsPDF {
+  const doc = new jsPDF('landscape');
+  let y = addReportHeader(doc, 'Activity Report — By Day', options);
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const byDay = new Map<string, NamedActivityRecord[]>();
+  for (const a of activities) {
+    const key = localDayKey(a.activityDate);
+    const group = byDay.get(key) ?? [];
+    group.push(a);
+    byDay.set(key, group);
+  }
+
+  const days = [...byDay.keys()].sort(); // chronological (ascending)
+
+  if (days.length === 0) {
+    doc.setFontSize(11);
+    doc.text('No activities to report.', 14, y);
+    return doc;
+  }
+
+  for (const day of days) {
+    const group = byDay
+      .get(day)!
+      .sort((a, b) => a.username.localeCompare(b.username));
+
+    if (y > pageHeight - 30) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text(format(parseLocalDay(day), 'EEEE, MMM d, yyyy'), 14, y);
+    doc.setFont('helvetica', 'normal');
+
+    autoTable(doc, {
+      head: [['User', 'Type', 'Value', 'Duration', 'Notes']],
+      body: group.map((a) => [
+        a.username,
+        a.type,
+        activityValue(a),
+        activityDuration(a),
+        a.notes ?? '',
+      ]),
+      startY: y + 3,
+      styles: { fontSize: 9, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 42 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 34 },
+        3: { cellWidth: 28 },
+        4: { cellWidth: 'auto' },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = lastY(doc) + 12;
+  }
+
+  return doc;
+}
+
+/**
+ * One block per user (alphabetical). Each block lists that user's workouts in
+ * chronological order.
+ */
+export function generateByUserPDF(
+  activities: NamedActivityRecord[],
+  options: ReportOptions = {}
+): jsPDF {
+  const doc = new jsPDF();
+  let y = addReportHeader(doc, 'Activity Report — By User', options);
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const byUser = new Map<string, NamedActivityRecord[]>();
+  for (const a of activities) {
+    const group = byUser.get(a.username) ?? [];
+    group.push(a);
+    byUser.set(a.username, group);
+  }
+
+  const usernames = [...byUser.keys()].sort((a, b) => a.localeCompare(b));
+
+  if (usernames.length === 0) {
+    doc.setFontSize(11);
+    doc.text('No activities to report.', 14, y);
+    return doc;
+  }
+
+  for (const name of usernames) {
+    // ISO strings sort chronologically as plain strings.
+    const group = byUser
+      .get(name)!
+      .sort((a, b) => String(a.activityDate).localeCompare(String(b.activityDate)));
+
+    if (y > pageHeight - 30) {
+      doc.addPage();
+      y = 20;
+    }
+
+    const totalDuration = group.reduce((s, a) => s + (a.durationMinutes ?? 0), 0);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text(name, 14, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(
+      `${group.length} activit${group.length === 1 ? 'y' : 'ies'}` +
+        (totalDuration > 0 ? ` · ${totalDuration} min total` : ''),
+      14,
+      y + 5
+    );
+
+    autoTable(doc, {
+      head: [['Date', 'Type', 'Value', 'Duration', 'Notes']],
+      body: group.map((a) => [
+        formatDate(a.activityDate),
+        a.type,
+        activityValue(a),
+        activityDuration(a),
+        a.notes ?? '',
+      ]),
+      startY: y + 9,
+      styles: { fontSize: 9, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 34 },
+        1: { cellWidth: 26 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 24 },
+        4: { cellWidth: 'auto' },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = lastY(doc) + 12;
+  }
 
   return doc;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Shield, Users, Activity, ChevronRight, CalendarDays } from 'lucide-react';
+import { Shield, Users, Activity, ChevronRight, CalendarDays, Download, ChevronDown, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { getUserGradient } from '@/lib/utils';
@@ -44,12 +44,57 @@ export default function AuditorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [exportAllOpen, setExportAllOpen] = useState(false);
+  const [exportingAll, setExportingAll] = useState<'day' | 'user' | null>(null);
+  const [exportingUserId, setExportingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== 'AUDITOR')) {
       router.push('/');
     }
   }, [user, isLoading, router]);
+
+  const handleExportAll = async (kind: 'day' | 'user') => {
+    if (!user) return;
+    setExportAllOpen(false);
+    setExportingAll(kind);
+    try {
+      const res = await fetch(`/api/auditor/export?requestingUserId=${user.id}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      if (kind === 'day') {
+        const { generateByDayPDF } = await import('@/lib/fitness-pdf-generator');
+        generateByDayPDF(data.activities).save('activity-by-day.pdf');
+      } else {
+        const { generateByUserPDF } = await import('@/lib/fitness-pdf-generator');
+        generateByUserPDF(data.activities).save('activity-by-user.pdf');
+      }
+    } catch {
+      setError('Failed to export report');
+    } finally {
+      setExportingAll(null);
+    }
+  };
+
+  const handleExportUser = async (u: UserRow) => {
+    if (!user) return;
+    setExportingUserId(u.id);
+    try {
+      const res = await fetch(`/api/auditor/users/${u.id}?requestingUserId=${user.id}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      const { generateActivityLogPDF } = await import('@/lib/fitness-pdf-generator');
+      generateActivityLogPDF(data.activities, { username: u.username }).save(
+        `${u.username}-activity-log.pdf`
+      );
+    } catch {
+      setError('Failed to export report');
+    } finally {
+      setExportingUserId(null);
+    }
+  };
 
   useEffect(() => {
     if (!user || user.role !== 'AUDITOR') return;
@@ -76,13 +121,64 @@ export default function AuditorDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Shield className="w-6 h-6 text-primary" />
+      <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Shield className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Auditor Dashboard</h1>
+            <p className="text-sm text-muted-foreground">View user activity and generate reports</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Auditor Dashboard</h1>
-          <p className="text-sm text-muted-foreground">View user activity and generate reports</p>
+
+        {/* Export All */}
+        <div className="relative flex-shrink-0">
+          <button
+            onClick={() => setExportAllOpen((o) => !o)}
+            disabled={exportingAll !== null || users.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exportingAll ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {exportingAll ? 'Generating…' : 'Export All'}
+            <ChevronDown className="w-4 h-4" />
+          </button>
+
+          {exportAllOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setExportAllOpen(false)} />
+              <div className="absolute right-0 mt-1 w-56 z-20 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+                <button
+                  onClick={() => handleExportAll('day')}
+                  className="w-full flex items-start gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors text-left"
+                >
+                  <CalendarDays className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <span>
+                    By Day
+                    <span className="block text-xs text-muted-foreground">
+                      All users grouped per day
+                    </span>
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleExportAll('user')}
+                  className="w-full flex items-start gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors text-left border-t border-border"
+                >
+                  <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <span>
+                    By User
+                    <span className="block text-xs text-muted-foreground">
+                      Each user, chronological
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -133,14 +229,16 @@ export default function AuditorDashboard() {
         ) : (
           <div className="divide-y divide-border">
             {filtered.map((u) => (
-              <button
+              <div
                 key={u.id}
-                onClick={() => router.push(`/auditor/${u.id}`)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <button
+                  onClick={() => router.push(`/auditor/${u.id}`)}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                >
                   <div className={`w-9 h-9 rounded-full ${getUserGradient(u.username)} flex-shrink-0`} />
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">{u.username}</span>
                       {u.role === 'AUDITOR' && (
@@ -154,15 +252,33 @@ export default function AuditorDashboard() {
                       {u.lastActive && ` · Last active ${format(new Date(u.lastActive), 'MMM d')}`}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
+                </button>
+                <div className="flex items-center gap-3 flex-shrink-0 pl-3">
                   <div className="text-right">
                     <p className="text-sm font-semibold text-foreground">{u.activityCount}</p>
                     <p className="text-xs text-muted-foreground">activities</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <button
+                    onClick={() => handleExportUser(u)}
+                    disabled={exportingUserId === u.id || u.activityCount === 0}
+                    title="Export activity log PDF"
+                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {exportingUserId === u.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => router.push(`/auditor/${u.id}`)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="View user details"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

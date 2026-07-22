@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import type { ActivityType, Prisma } from '@prisma/client';
+import type { ActivityType, Prisma, UserRole } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,5 +62,48 @@ export async function GET(
   } catch (error) {
     console.error('GET /api/auditor/users/[userId] error:', error);
     return NextResponse.json({ error: 'Failed to fetch user snapshot' }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const requestingUserId: string | undefined = body.requestingUserId;
+    const role: UserRole | undefined = body.role;
+
+    if (role !== 'USER' && role !== 'AUDITOR') {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    }
+
+    const requester = await prisma.user.findUnique({
+      where: { id: requestingUserId ?? '' },
+      select: { id: true, role: true },
+    });
+
+    if (!requester || requester.role !== 'AUDITOR') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Prevent an auditor from revoking their own auditor role (avoids lockout).
+    if (requester.id === params.userId && role !== 'AUDITOR') {
+      return NextResponse.json(
+        { error: 'You cannot revoke your own auditor role' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: params.userId },
+      data: { role },
+      select: { id: true, username: true, role: true, createdAt: true },
+    });
+
+    return NextResponse.json({ user: updated });
+  } catch (error) {
+    console.error('PATCH /api/auditor/users/[userId] error:', error);
+    return NextResponse.json({ error: 'Failed to update user role' }, { status: 500 });
   }
 }

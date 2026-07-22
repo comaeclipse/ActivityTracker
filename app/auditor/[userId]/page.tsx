@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { ArrowLeft, Download, FileText, User, Activity, Calendar, Filter } from 'lucide-react';
+import { ArrowLeft, Download, FileText, User, Activity, Calendar, Filter, ShieldCheck, ShieldOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { getUserGradient } from '@/lib/utils';
 
@@ -40,6 +40,7 @@ export default function UserSnapshotPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState<'log' | 'summary' | null>(null);
+  const [updatingRole, setUpdatingRole] = useState(false);
 
   const [filters, setFilters] = useState({
     startDate: '',
@@ -116,6 +117,29 @@ export default function UserSnapshotPage() {
     }
   };
 
+  const handleToggleRole = async () => {
+    if (!user || !targetUser) return;
+    const nextRole = targetUser.role === 'AUDITOR' ? 'USER' : 'AUDITOR';
+    setUpdatingRole(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/auditor/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestingUserId: user.id, role: nextRole }),
+      });
+      const data = await res.json();
+      if (data.error) setError(data.error);
+      else setTargetUser(data.user);
+    } catch {
+      setError('Failed to update role');
+    } finally {
+      setUpdatingRole(false);
+    }
+  };
+
+  const isSelf = user?.id === userId;
+
   if (isLoading || !user) return null;
 
   return (
@@ -154,8 +178,30 @@ export default function UserSnapshotPage() {
             </div>
           </div>
 
-          {/* PDF download buttons */}
-          <div className="flex gap-2 flex-shrink-0">
+          {/* Actions */}
+          <div className="flex gap-2 flex-shrink-0 flex-wrap">
+            {!isSelf && (
+              <button
+                onClick={handleToggleRole}
+                disabled={updatingRole}
+                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  targetUser?.role === 'AUDITOR'
+                    ? 'border-border bg-card hover:bg-muted text-foreground'
+                    : 'border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary'
+                }`}
+              >
+                {targetUser?.role === 'AUDITOR' ? (
+                  <ShieldOff className="w-4 h-4" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )}
+                {updatingRole
+                  ? 'Saving…'
+                  : targetUser?.role === 'AUDITOR'
+                  ? 'Revoke Auditor'
+                  : 'Make Auditor'}
+              </button>
+            )}
             <button
               onClick={handleDownloadLog}
               disabled={activities.length === 0 || generating !== null}
