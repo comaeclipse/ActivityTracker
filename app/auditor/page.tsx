@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Shield, Users, Activity, ChevronRight, CalendarDays, Download, ChevronDown, Loader2 } from 'lucide-react';
+import { Shield, Users, Activity, ChevronRight, CalendarDays, Download, ChevronDown, Loader2, LayoutGrid, List } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { getUserGradient } from '@/lib/utils';
@@ -37,6 +37,64 @@ function UserCalendar({ dates }: { dates: string[] }) {
   );
 }
 
+// --- 90-day horizontal strip (list view) ---
+const STRIP_DAYS = 90;
+const CELL = 7; // px
+const GAP = 2; // px
+const STEP = CELL + GAP;
+const STRIP_WIDTH = STRIP_DAYS * STEP - GAP;
+
+// Build the last `count` calendar days (local), oldest → newest, ending today.
+function buildRecentDays(count: number, ref: Date): Date[] {
+  const base = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+  const days: Date[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(base);
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  return days;
+}
+
+function MonthAxis({ days }: { days: Date[] }) {
+  const marks: { index: number; label: string }[] = [];
+  days.forEach((d, i) => {
+    if (i === 0 || d.getDate() === 1) marks.push({ index: i, label: format(d, 'MMM') });
+  });
+  return (
+    <div className="relative h-4 flex-shrink-0" style={{ width: STRIP_WIDTH }}>
+      {marks.map((m) => (
+        <span
+          key={m.index}
+          className="absolute top-0 text-[10px] text-muted-foreground"
+          style={{ left: m.index * STEP }}
+        >
+          {m.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function UserActivityStrip({ dates, days }: { dates: string[]; days: Date[] }) {
+  const workouts = new Set(dates);
+  return (
+    <div className="flex flex-shrink-0" style={{ gap: GAP }}>
+      {days.map((d, i) => {
+        const active = workouts.has(format(d, 'yyyy-MM-dd'));
+        return (
+          <div
+            key={i}
+            title={`${format(d, 'MMM d, yyyy')}${active ? ' · workout' : ''}`}
+            className={`rounded-sm ${active ? 'bg-blue-500' : 'bg-muted'}`}
+            style={{ width: CELL, height: CELL }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AuditorDashboard() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -47,6 +105,18 @@ export default function AuditorDashboard() {
   const [exportAllOpen, setExportAllOpen] = useState(false);
   const [exportingAll, setExportingAll] = useState<'day' | 'user' | null>(null);
   const [exportingUserId, setExportingUserId] = useState<string | null>(null);
+  const [calendarView, setCalendarView] = useState<'cards' | 'list'>('cards');
+
+  const stripDays = useMemo(() => buildRecentDays(STRIP_DAYS, new Date()), []);
+
+  // Restore/persist the calendar view preference.
+  useEffect(() => {
+    const saved = window.localStorage.getItem('auditorCalendarView');
+    if (saved === 'cards' || saved === 'list') setCalendarView(saved);
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem('auditorCalendarView', calendarView);
+  }, [calendarView]);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== 'AUDITOR')) {
@@ -287,32 +357,93 @@ export default function AuditorDashboard() {
       {/* Activity Calendars */}
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-muted-foreground" />
-            <h2 className="font-semibold text-foreground">Activity Calendars</h2>
-            <span className="text-xs text-muted-foreground ml-1">
-              — blue dates are logged workouts
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((u) => (
-              <div
-                key={u.id}
-                className="bg-card border border-border rounded-xl overflow-hidden"
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <CalendarDays className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <h2 className="font-semibold text-foreground">Activity Calendars</h2>
+              <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">
+                — blue {calendarView === 'list' ? 'cells' : 'dates'} are logged workouts
+              </span>
+            </div>
+            <div className="flex items-center rounded-lg border border-border bg-card p-0.5 flex-shrink-0">
+              <button
+                onClick={() => setCalendarView('cards')}
+                title="Card view"
+                aria-label="Card view"
+                aria-pressed={calendarView === 'cards'}
+                className={`p-1.5 rounded-md transition-colors ${
+                  calendarView === 'cards'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                <div className="px-4 pt-4 pb-2 flex items-center gap-3 border-b border-border">
-                  <div className={`w-8 h-8 rounded-full ${getUserGradient(u.username)} flex-shrink-0`} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{u.username}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {u.activityCount} activit{u.activityCount !== 1 ? 'ies' : 'y'}
-                    </p>
-                  </div>
-                </div>
-                <UserCalendar dates={u.activityDates} />
-              </div>
-            ))}
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setCalendarView('list')}
+                title="List view — last 90 days"
+                aria-label="List view"
+                aria-pressed={calendarView === 'list'}
+                className={`p-1.5 rounded-md transition-colors ${
+                  calendarView === 'list'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+
+          {calendarView === 'cards' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filtered.map((u) => (
+                <div
+                  key={u.id}
+                  className="bg-card border border-border rounded-xl overflow-hidden"
+                >
+                  <div className="px-4 pt-4 pb-2 flex items-center gap-3 border-b border-border">
+                    <div className={`w-8 h-8 rounded-full ${getUserGradient(u.username)} flex-shrink-0`} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{u.username}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {u.activityCount} activit{u.activityCount !== 1 ? 'ies' : 'y'}
+                      </p>
+                    </div>
+                  </div>
+                  <UserCalendar dates={u.activityDates} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl p-4 overflow-x-auto">
+              <div className="min-w-max space-y-1">
+                {/* Month axis */}
+                <div className="flex items-center gap-4 pb-1">
+                  <div className="w-44 flex-shrink-0" />
+                  <MonthAxis days={stripDays} />
+                </div>
+                {filtered.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => router.push(`/auditor/${u.id}`)}
+                    className="flex items-center gap-4 w-full text-left rounded-lg px-1 py-1.5 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-44 flex-shrink-0 flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-full ${getUserGradient(u.username)} flex-shrink-0`} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{u.username}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {u.activityCount} activit{u.activityCount !== 1 ? 'ies' : 'y'}
+                        </p>
+                      </div>
+                    </div>
+                    <UserActivityStrip dates={u.activityDates} days={stripDays} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
