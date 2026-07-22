@@ -32,7 +32,7 @@ function UserCalendar({ dates }: { dates: string[] }) {
       modifiersClassNames={{
         workout: '!bg-blue-500 !text-white rounded-full hover:!bg-blue-600 focus:!bg-blue-600',
       }}
-      defaultMonth={workoutDates.at(-1) ?? new Date()}
+      defaultMonth={new Date()}
     />
   );
 }
