@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart, Trash2, Loader2 } from 'lucide-react';
+import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart, Trash2, Loader2, Waves } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import ActivityMap from '@/components/ActivityMap';
 
@@ -12,7 +12,7 @@ interface ActivityData {
     id: string;
     username: string;
   };
-  type: 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION';
+  type: 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION' | 'ROW';
   value: number | null;
   unit: string | null;
   durationMinutes: number | null;
@@ -36,6 +36,7 @@ const activityIcons = {
   WEIGHTS: Dumbbell,
   BIKE: Bike,
   HYDRATION: Droplet,
+  ROW: Waves,
 };
 
 const activityColors = {
@@ -45,6 +46,7 @@ const activityColors = {
   WEIGHTS: 'text-orange-500 bg-orange-500/10',
   BIKE: 'text-purple-500 bg-purple-500/10',
   HYDRATION: 'text-indigo-500 bg-indigo-500/10',
+  ROW: 'text-teal-500 bg-teal-500/10',
 };
 
 const activityLabels = {
@@ -54,7 +56,24 @@ const activityLabels = {
   WEIGHTS: 'Weights',
   BIKE: 'Bike',
   HYDRATION: 'Hydration',
+  ROW: 'Row',
 };
+
+// The universal workout logger encodes its category/sub-label into `notes`
+// as "Category · Label" (optionally followed by " · " and the user's own
+// note), since the DB only stores a coarse `type` (e.g. WEIGHTS covers both
+// "Push" and "Full Body"). Parse that back out so the header can read
+// "Cardio: Walk" instead of duplicating "Walk" in both the title and notes.
+const LOGGER_CATEGORIES = ['Strength', 'Cardio', 'Calisthenics'];
+const LOGGER_NOTES_PATTERN = new RegExp(`^(${LOGGER_CATEGORIES.join('|')}) · ([^·]+?)(?: · ([\\s\\S]*))?$`);
+
+function parseLoggerNotes(notes: string | null): { category: string; label: string; extra: string | null } | null {
+  if (!notes) return null;
+  const match = notes.match(LOGGER_NOTES_PATTERN);
+  if (!match) return null;
+  const [, category, label, extra] = match;
+  return { category, label: label.trim(), extra: extra?.trim() || null };
+}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -266,6 +285,9 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
             const Icon = activityIcons[activity.type];
             const colorClass = activityColors[activity.type];
             const label = activityLabels[activity.type];
+            const parsedNotes = parseLoggerNotes(activity.notes);
+            const headerLabel = parsedNotes ? `${parsedNotes.category}: ${parsedNotes.label}` : `${label}:`;
+            const displayNotes = parsedNotes ? parsedNotes.extra : activity.notes;
 
             return (
               <div
@@ -280,7 +302,7 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <p className="font-medium text-foreground">
-                          {label}: {activity.value !== null && activity.unit !== null && `${activity.value} ${activity.unit}`}
+                          {headerLabel} {activity.value !== null && activity.unit !== null && `${activity.value} ${activity.unit}`}
                           {activity.value !== null && activity.unit !== null && activity.durationMinutes !== null && ' • '}
                           {activity.durationMinutes !== null && `${activity.durationMinutes} min`}
                         </p>
@@ -288,9 +310,9 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
                           <Calendar className="h-3.5 w-3.5" />
                           <span>{formatActivityDate(activity.activityDate)}</span>
                         </div>
-                        {activity.notes && (
+                        {displayNotes && (
                           <p className="text-sm text-muted-foreground mt-2 italic">
-                            "{activity.notes}"
+                            "{displayNotes}"
                           </p>
                         )}
                         {/* Like button and count */}
