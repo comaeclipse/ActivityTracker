@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { generateRandomUsername, generateRandomPassword } from '@/lib/generators';
+import { generateRandomPassword } from '@/lib/generators';
 import { Shuffle, Eye, EyeOff, LogIn, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -26,10 +28,6 @@ export default function LoginPage() {
       router.push('/');
     }
   }, [user, router]);
-
-  const handleGenerateUsername = () => {
-    setUsername(generateRandomUsername());
-  };
 
   const handleGeneratePassword = () => {
     setPassword(generateRandomPassword());
@@ -82,11 +80,19 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to FitLog</h1>
-          <p className="text-muted-foreground">Track your fitness journey anonymously</p>
         </div>
 
         {/* Login/Signup Card */}
-        <div className="bg-card rounded-2xl shadow-lg border border-border p-8 min-h-[520px]">
+        <Card className="rounded-2xl shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">{isLogin ? 'Log in' : 'Create your account'}</CardTitle>
+            <CardDescription>
+              {isLogin
+                ? 'Enter your credentials to access your account.'
+                : 'Pick a username and password to get started.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
           {/* Toggle Login/Signup */}
           <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
             <button
@@ -117,31 +123,14 @@ export default function LoginPage() {
               <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
                 Username
               </label>
-              <div className="flex gap-2">
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="QuickTiger89"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="flex-1"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleGenerateUsername}
-                  className="px-3"
-                  title="Generate random username"
-                >
-                  <Shuffle className="w-4 h-4" />
-                </Button>
-              </div>
-              {!isLogin && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Click the shuffle icon to generate a random username
-                </p>
-              )}
+              <Input
+                id="username"
+                type="text"
+                placeholder="QuickTiger89"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
             </div>
 
             {/* Password Field */}
@@ -164,6 +153,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -179,6 +169,7 @@ export default function LoginPage() {
                     onClick={handleGeneratePassword}
                     className="px-3"
                     title="Generate random password"
+                    tabIndex={-1}
                   >
                     <Shuffle className="w-4 h-4" />
                   </Button>
@@ -211,9 +202,10 @@ export default function LoginPage() {
               {loading ? 'Please wait...' : isLogin ? 'Login' : 'Create Account'}
             </Button>
           </form>
+          </CardContent>
 
           {/* Additional Info */}
-          <div className="mt-6 pt-6 border-t border-border">
+          <CardFooter className="justify-center">
             <p className="text-xs text-center text-muted-foreground">
               {isLogin ? "Don't have an account? " : 'Already have an account? '}
               <button
@@ -224,18 +216,20 @@ export default function LoginPage() {
                 {isLogin ? 'Sign up' : 'Login'}
               </button>
             </p>
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
 
-        {/* Privacy Notice */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            Your activity data is tracked anonymously. We don't collect personal information.
-          </p>
-        </div>
       </div>
 
       <SpeedInsights />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
