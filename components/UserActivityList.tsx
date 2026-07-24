@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart, Trash2, Loader2, Waves } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { parseLoggerNotes } from '@/lib/activity-notes';
 import ActivityMap from '@/components/ActivityMap';
 
 interface ActivityData {
@@ -58,22 +59,6 @@ const activityLabels = {
   HYDRATION: 'Hydration',
   ROW: 'Row',
 };
-
-// The universal workout logger encodes its category/sub-label into `notes`
-// as "Category · Label" (optionally followed by " · " and the user's own
-// note), since the DB only stores a coarse `type` (e.g. WEIGHTS covers both
-// "Push" and "Full Body"). Parse that back out so the header can read
-// "Cardio: Walk" instead of duplicating "Walk" in both the title and notes.
-const LOGGER_CATEGORIES = ['Strength', 'Cardio', 'Calisthenics'];
-const LOGGER_NOTES_PATTERN = new RegExp(`^(${LOGGER_CATEGORIES.join('|')}) · ([^·]+?)(?: · ([\\s\\S]*))?$`);
-
-function parseLoggerNotes(notes: string | null): { category: string; label: string; extra: string | null } | null {
-  if (!notes) return null;
-  const match = notes.match(LOGGER_NOTES_PATTERN);
-  if (!match) return null;
-  const [, category, label, extra] = match;
-  return { category, label: label.trim(), extra: extra?.trim() || null };
-}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { parseLoggerNotes, groupSessions } from '@/lib/activity-notes';
 import {
   Users, Heart, TrendingUp, Waves, Dumbbell, Bike, Droplets, Zap,
 } from 'lucide-react';
@@ -50,6 +51,13 @@ function formatSummary(type: string, value: number | null, unit: string | null, 
   if (value != null && unit) parts.push(`${value % 1 === 0 ? value : value.toFixed(1)} ${unit}`);
   if (duration != null) parts.push(`${duration} min`);
   return parts.join(' · ');
+}
+
+// Per-exercise label for a line inside a grouped card, e.g. "strength: push".
+function exerciseLabel(a: Activity): string {
+  const parsed = parseLoggerNotes(a.notes);
+  if (parsed) return `${parsed.category.toLowerCase()}: ${parsed.label.toLowerCase()}`;
+  return (TYPE_CONFIG[a.type] ?? FALLBACK).label.toLowerCase();
 }
 
 export default function CommunityPage() {
@@ -141,17 +149,29 @@ export default function CommunityPage() {
 
         {!loading && !error && activities.length > 0 && (
           <div className="divide-y divide-border">
-            {activities.map((a) => {
-              const cfg = TYPE_CONFIG[a.type] ?? FALLBACK;
-              const Icon = cfg.Icon;
-              const isOwn = user?.id === a.user.id;
-              const summary = formatSummary(a.type, a.value, a.unit, a.durationMinutes);
+            {groupSessions(activities).map((group) => {
+              // The anchor row carries the session's identity: its icon, its
+              // shared note, and — since likes are stored per row — its likes.
+              const anchor = group[0];
+              const isSession = group.length > 1;
+              const cfg = TYPE_CONFIG[anchor.type] ?? FALLBACK;
+              const Icon = isSession ? Zap : cfg.Icon;
+              const isOwn = user?.id === anchor.user.id;
+              const summary = formatSummary(anchor.type, anchor.value, anchor.unit, anchor.durationMinutes);
+              const parsed = parseLoggerNotes(anchor.notes);
+              // Lowercased to sit inside the "logged a …" sentence.
+              const activityLabel = parsed
+                ? `${parsed.category.toLowerCase()}: ${parsed.label.toLowerCase()}`
+                : cfg.label.toLowerCase();
+              // Every row in a session repeats the same free-text note, so the
+              // anchor's copy stands in for the whole group.
+              const displayNotes = parsed ? parsed.extra : anchor.notes;
 
               return (
-                <div key={a.id} className="px-5 py-4 hover:bg-muted/40 transition-colors">
+                <div key={anchor.id} className="px-5 py-4 hover:bg-muted/40 transition-colors">
                   <div className="flex items-start gap-4">
                     {/* Activity type icon */}
-                    <div className={`p-2 rounded-lg ${cfg.iconBg} ${cfg.iconColor} shrink-0 mt-0.5`}>
+                    <div className={`p-2 rounded-lg ${isSession ? 'bg-primary/10 text-primary' : `${cfg.iconBg} ${cfg.iconColor}`} shrink-0 mt-0.5`}>
                       <Icon className="w-5 h-5" />
                     </div>
 
@@ -160,47 +180,68 @@ export default function CommunityPage() {
                       <div className="flex items-baseline justify-between gap-2 flex-wrap">
                         <div className="flex items-baseline gap-1.5 flex-wrap">
                           <a
-                            href={`/user/${a.user.username}`}
+                            href={`/user/${anchor.user.username}`}
                             className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                           >
-                            {isOwn ? 'You' : a.user.username}
+                            {isOwn ? 'You' : anchor.user.username}
                           </a>
                           <span className="text-sm text-muted-foreground">
-                            logged a {cfg.label.toLowerCase()}
-                            {summary ? ` · ${summary}` : ''}
+                            {isSession
+                              ? `logged a workout · ${group.length} exercises`
+                              : `logged a ${activityLabel}${summary ? ` · ${summary}` : ''}`}
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground shrink-0">
-                          {relativeTime(a.activityDate)}
+                          {relativeTime(anchor.activityDate)}
                         </span>
                       </div>
 
+                      {/* Exercises in the session */}
+                      {isSession && (
+                        <ul className="mt-2 space-y-1">
+                          {group.map((a) => {
+                            const itemSummary = formatSummary(a.type, a.value, a.unit, a.durationMinutes);
+                            return (
+                              <li key={a.id} className="flex items-baseline gap-2 text-sm text-foreground">
+                                <span className="w-1 h-1 rounded-full bg-muted-foreground/50 shrink-0" />
+                                <span>
+                                  {exerciseLabel(a)}
+                                  {itemSummary && (
+                                    <span className="text-muted-foreground"> · {itemSummary}</span>
+                                  )}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+
                       {/* Notes */}
-                      {a.notes && (
+                      {displayNotes && (
                         <p className="text-sm text-muted-foreground mt-1.5 italic">
-                          &ldquo;{a.notes}&rdquo;
+                          &ldquo;{displayNotes}&rdquo;
                         </p>
                       )}
 
                       {/* Like button */}
                       <div className="flex items-center gap-2 mt-2.5">
                         <button
-                          onClick={() => handleLike(a.id)}
+                          onClick={() => handleLike(anchor.id)}
                           disabled={!user}
                           className={`flex items-center gap-1.5 text-sm transition-colors ${
-                            a.isLikedByCurrentUser
+                            anchor.isLikedByCurrentUser
                               ? 'text-red-500 hover:text-red-600'
                               : 'text-muted-foreground hover:text-red-500'
                           } ${!user ? 'opacity-40 cursor-default' : ''}`}
                         >
-                          <Heart className={`w-4 h-4 ${a.isLikedByCurrentUser ? 'fill-current' : ''}`} />
-                          {a.likeCount > 0 && (
-                            <span>{a.likeCount}</span>
+                          <Heart className={`w-4 h-4 ${anchor.isLikedByCurrentUser ? 'fill-current' : ''}`} />
+                          {anchor.likeCount > 0 && (
+                            <span>{anchor.likeCount}</span>
                           )}
                         </button>
-                        {a.likeCount > 0 && (
+                        {anchor.likeCount > 0 && (
                           <span className="text-xs text-muted-foreground">
-                            {a.likeCount === 1 ? 'like' : 'likes'}
+                            {anchor.likeCount === 1 ? 'like' : 'likes'}
                           </span>
                         )}
                       </div>
