@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { del } from '@vercel/blob';
 import prisma from '@/lib/prisma';
 
 export async function DELETE(
@@ -21,7 +22,7 @@ export async function DELETE(
 
     const activity = await prisma.activity.findUnique({
       where: { id: activityId },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, photoUrl: true },
     });
 
     if (!activity) {
@@ -38,11 +39,27 @@ export async function DELETE(
     // at activityId with no FK — delete both explicitly to be safe. Everything
     // else (feed, stats, analytics, auditor calendars) is derived live from the
     // Activity table, so it recomputes correctly once the row is gone.
-    await prisma.$transaction([
-      prisma.activityLike.deleteMany({ where: { activityId } }),
-      prisma.notification.deleteMany({ where: { activityId } }),
-      prisma.activity.delete({ where: { id: activityId } }),
-    ]);
+    const remainingPhotoReferences = await prisma.$transaction(async (tx) => {
+      await tx.activityLike.deleteMany({ where: { activityId } });
+      await tx.notification.deleteMany({ where: { activityId } });
+      await tx.activity.delete({ where: { id: activityId } });
+
+      return activity.photoUrl
+        ? tx.activity.count({ where: { photoUrl: activity.photoUrl } })
+        : 0;
+    });
+
+    // A single logger submission can create several activity rows that share
+    // one screenshot. Only remove the Blob after the final reference is gone.
+    if (activity.photoUrl && remainingPhotoReferences === 0) {
+      try {
+        await del(activity.photoUrl);
+      } catch (error) {
+        // The activity deletion has already succeeded. Keep that result and
+        // surface the Blob cleanup failure in server logs for follow-up.
+        console.error('Failed to delete workout screenshot Blob', error);
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

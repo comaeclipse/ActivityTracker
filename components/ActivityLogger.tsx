@@ -103,7 +103,16 @@ export default function ActivityLogger() {
 
   const compressWorkoutScreenshot = async (file: File): Promise<File> => {
     const source = await createImageBitmap(file);
-    const maxDimension = 1600;
+    const maxDimension = 2400;
+    const maxUploadBytes = 4 * 1024 * 1024;
+
+    // A typical workout screenshot is already tiny and lossless. Keep it
+    // untouched so text, metrics, and small UI details stay crisp.
+    if (file.size <= maxUploadBytes && Math.max(source.width, source.height) <= maxDimension) {
+      source.close();
+      return file;
+    }
+
     const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
     const width = Math.max(1, Math.round(source.width * scale));
     const height = Math.max(1, Math.round(source.height * scale));
@@ -113,10 +122,10 @@ export default function ActivityLogger() {
     canvas.getContext('2d')?.drawImage(source, 0, 0, width, height);
     source.close();
 
-    for (const quality of [0.82, 0.72, 0.62, 0.52]) {
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-      if (blob && blob.size <= 4 * 1024 * 1024) {
-        return new File([blob], 'workout-screenshot.jpg', { type: 'image/jpeg' });
+    for (const quality of [0.94, 0.9, 0.85, 0.8, 0.75]) {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+      if (blob && blob.size <= maxUploadBytes) {
+        return new File([blob], 'workout-screenshot.webp', { type: 'image/webp' });
       }
     }
     throw new Error('This image is still too large after compression. Choose a smaller screenshot.');
@@ -302,7 +311,7 @@ export default function ActivityLogger() {
           onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
           className="h-auto cursor-pointer py-1.5 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted/70"
         />
-        {photo && <p className="text-xs text-muted-foreground">{photo.name} will be resized before upload.</p>}
+        {photo && <p className="text-xs text-muted-foreground">{photo.name} will be optimized only if it exceeds 2400px or 4 MB.</p>}
       </div>
 
       {message && (
