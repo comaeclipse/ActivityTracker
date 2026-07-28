@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
-type ActivityType = 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION';
+type ActivityType = 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION' | 'ROW' | 'STAIRMASTER';
 
 export interface ActivityRecord {
   id: string;
@@ -273,7 +273,7 @@ export function generateSummaryPDF(
   const doc = new jsPDF();
   const startY = addReportHeader(doc, 'Activity Summary Report', options);
 
-  const typeOrder: ActivityType[] = ['RUN', 'WALK', 'SWIM', 'WEIGHTS', 'BIKE', 'HYDRATION'];
+  const typeOrder: ActivityType[] = ['RUN', 'WALK', 'SWIM', 'WEIGHTS', 'BIKE', 'ROW', 'STAIRMASTER', 'HYDRATION'];
 
   const tableData = typeOrder.map((type) => {
     const group = activities.filter((a) => a.type === type);

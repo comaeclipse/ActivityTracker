@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Plus, X, Dumbbell, Activity as ActivityIcon, Zap } from 'lucide-react';
+import { ImagePlus, Plus, X, Dumbbell, Activity as ActivityIcon, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-type WType = 'RUN' | 'WALK' | 'BIKE' | 'ROW' | 'WEIGHTS';
+type WType = 'RUN' | 'WALK' | 'BIKE' | 'ROW' | 'STAIRMASTER' | 'WEIGHTS';
 
 interface SubItem {
   label: string;
@@ -39,6 +40,7 @@ const GROUPS: Group[] = [
       { label: 'Walk', type: 'WALK' },
       { label: 'Bike', type: 'BIKE' },
       { label: 'Row', type: 'ROW' },
+      { label: 'StairMaster', type: 'STAIRMASTER' },
     ],
   },
   {
@@ -71,6 +73,7 @@ export default function ActivityLogger() {
   const [activityDate, setActivityDate] = useState(nowLocal);
   const [distance, setDistance] = useState('');
   const [notes, setNotes] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -81,6 +84,7 @@ export default function ActivityLogger() {
     setSelected([]);
     setDistance('');
     setNotes('');
+    setPhoto(null);
     setMessage(null);
     setActivityDate(nowLocal());
   };
@@ -97,6 +101,27 @@ export default function ActivityLogger() {
 
   const hasDistance = selected.some((s) => s.type === 'RUN' || s.type === 'WALK');
 
+  const compressWorkoutScreenshot = async (file: File): Promise<File> => {
+    const source = await createImageBitmap(file);
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
+    const width = Math.max(1, Math.round(source.width * scale));
+    const height = Math.max(1, Math.round(source.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d')?.drawImage(source, 0, 0, width, height);
+    source.close();
+
+    for (const quality of [0.82, 0.72, 0.62, 0.52]) {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+      if (blob && blob.size <= 4 * 1024 * 1024) {
+        return new File([blob], 'workout-screenshot.jpg', { type: 'image/jpeg' });
+      }
+    }
+    throw new Error('This image is still too large after compression. Choose a smaller screenshot.');
+  };
+
   const submit = async () => {
     if (!selected.length) return;
     setIsSubmitting(true);
@@ -104,6 +129,18 @@ export default function ActivityLogger() {
     try {
       const iso = new Date(activityDate).toISOString();
       const dist = distance && Number(distance) > 0 ? Number(distance) : null;
+      let photoUrl: string | null = null;
+
+      if (photo) {
+        const compressedPhoto = await compressWorkoutScreenshot(photo);
+        const formData = new FormData();
+        formData.set('photo', compressedPhoto);
+        formData.set('userId', user.id);
+        const photoResponse = await fetch('/api/workout-photo', { method: 'POST', body: formData });
+        const photoData = await photoResponse.json().catch(() => ({}));
+        if (!photoResponse.ok) throw new Error(photoData.error || 'Failed to upload workout screenshot');
+        photoUrl = photoData.url;
+      }
 
       // One activity per selected segment, sharing the same date/notes.
       const bodies = selected.map((seg) => {
@@ -111,6 +148,7 @@ export default function ActivityLogger() {
           userId: user.id,
           type: seg.type,
           activityDate: iso,
+          photoUrl,
           notes: `${seg.category} · ${seg.label}${notes ? ` · ${notes}` : ''}`,
         };
         if (dist && (seg.type === 'RUN' || seg.type === 'WALK')) {
@@ -249,6 +287,22 @@ export default function ActivityLogger() {
           onChange={(e) => setNotes(e.target.value)}
           className="w-full px-3 py-2 rounded-md border border-input bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
+      </div>
+
+      {/* Optional screenshot attachment */}
+      <div className="space-y-1.5">
+        <Label htmlFor="workout-photo" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <ImagePlus className="h-3.5 w-3.5" />
+          Add workout screenshot <span className="font-normal">(optional)</span>
+        </Label>
+        <Input
+          id="workout-photo"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+          className="h-auto cursor-pointer py-1.5 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted/70"
+        />
+        {photo && <p className="text-xs text-muted-foreground">{photo.name} will be resized before upload.</p>}
       </div>
 
       {message && (

@@ -21,7 +21,7 @@ interface WorkoutDay {
   count: number;
 }
 
-const WORKOUT_TYPES = ['RUN', 'WALK', 'SWIM', 'WEIGHTS', 'BIKE'];
+const WORKOUT_TYPES = ['RUN', 'WALK', 'SWIM', 'WEIGHTS', 'BIKE', 'ROW', 'STAIRMASTER'];
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [

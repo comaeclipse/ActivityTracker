@@ -39,6 +39,7 @@ model Activity {
   notes           String?
   latitude        Float?
   longitude       Float?
+  photoUrl        String?
   activityDate    DateTime     @default(now())
 
   createdAt       DateTime     @default(now())
@@ -119,6 +120,7 @@ enum ActivityType {
   BIKE
   HYDRATION
   ROW
+  STAIRMASTER
 }
 
 enum GoalStatus {

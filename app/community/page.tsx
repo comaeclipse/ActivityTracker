@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { parseLoggerNotes, groupSessions } from '@/lib/activity-notes';
 import {
-  Users, Heart, TrendingUp, Waves, Dumbbell, Bike, Droplets, Zap,
+  Users, Heart, TrendingUp, Waves, Dumbbell, Bike, Droplets, Zap, ChartNoAxesColumnIncreasing,
 } from 'lucide-react';
 
 type Activity = {
@@ -15,6 +15,7 @@ type Activity = {
   unit: string | null;
   durationMinutes: number | null;
   notes: string | null;
+  photoUrl: string | null;
   activityDate: string;
   createdAt: string;
   likeCount: number;
@@ -29,6 +30,7 @@ const TYPE_CONFIG: Record<string, { label: string; Icon: React.ElementType; icon
   BIKE:      { label: 'Cycling',   Icon: Bike,       iconColor: 'text-purple-500', iconBg: 'bg-purple-500/10' },
   HYDRATION: { label: 'Hydration', Icon: Droplets,   iconColor: 'text-indigo-500', iconBg: 'bg-indigo-500/10' },
   ROW:       { label: 'Row',       Icon: Waves,      iconColor: 'text-teal-500',   iconBg: 'bg-teal-500/10'   },
+  STAIRMASTER: { label: 'StairMaster', Icon: ChartNoAxesColumnIncreasing, iconColor: 'text-orange-500', iconBg: 'bg-orange-500/10' },
 };
 
 const FALLBACK = { label: 'Activity', Icon: Zap, iconColor: 'text-yellow-500', iconBg: 'bg-yellow-500/10' };
@@ -221,6 +223,12 @@ export default function CommunityPage() {
                         <p className="text-sm text-muted-foreground mt-1.5 italic">
                           &ldquo;{displayNotes}&rdquo;
                         </p>
+                      )}
+
+                      {anchor.photoUrl && (
+                        <a href={anchor.photoUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
+                          <img src={anchor.photoUrl} alt="Workout screenshot" className="max-h-64 rounded-md border border-border object-cover" />
+                        </a>
                       )}
 
                       {/* Like button */}

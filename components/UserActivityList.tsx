@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Activity, Calendar, Droplet, Bike, Dumbbell, PersonStanding, Heart, Trash2, Loader2, Waves } from 'lucide-react';
+import { Activity, Calendar, ChartNoAxesColumnIncreasing, Droplet, Bike, Dumbbell, PersonStanding, Heart, Trash2, Loader2, Waves } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { parseLoggerNotes } from '@/lib/activity-notes';
 import ActivityMap from '@/components/ActivityMap';
@@ -13,11 +13,12 @@ interface ActivityData {
     id: string;
     username: string;
   };
-  type: 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION' | 'ROW';
+  type: 'RUN' | 'WALK' | 'SWIM' | 'WEIGHTS' | 'BIKE' | 'HYDRATION' | 'ROW' | 'STAIRMASTER';
   value: number | null;
   unit: string | null;
   durationMinutes: number | null;
   notes: string | null;
+  photoUrl: string | null;
   latitude: number | null;
   longitude: number | null;
   activityDate: string;
@@ -38,6 +39,7 @@ const activityIcons = {
   BIKE: Bike,
   HYDRATION: Droplet,
   ROW: Waves,
+  STAIRMASTER: ChartNoAxesColumnIncreasing,
 };
 
 const activityColors = {
@@ -48,6 +50,7 @@ const activityColors = {
   BIKE: 'text-purple-500 bg-purple-500/10',
   HYDRATION: 'text-indigo-500 bg-indigo-500/10',
   ROW: 'text-teal-500 bg-teal-500/10',
+  STAIRMASTER: 'text-orange-500 bg-orange-500/10',
 };
 
 const activityLabels = {
@@ -58,6 +61,7 @@ const activityLabels = {
   BIKE: 'Bike',
   HYDRATION: 'Hydration',
   ROW: 'Row',
+  STAIRMASTER: 'StairMaster',
 };
 
 function formatDate(dateString: string) {
@@ -299,6 +303,11 @@ export default function UserActivityList({ userId }: UserActivityListProps) {
                           <p className="text-sm text-muted-foreground mt-2 italic">
                             "{displayNotes}"
                           </p>
+                        )}
+                        {activity.photoUrl && (
+                          <a href={activity.photoUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
+                            <img src={activity.photoUrl} alt="Workout screenshot" className="max-h-52 rounded-md border border-border object-cover" />
+                          </a>
                         )}
                         {/* Like button and count */}
                         <div className="flex items-center gap-3 mt-3">

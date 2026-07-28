@@ -2,18 +2,21 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import type { ActivityType } from '@prisma/client';
 
-const TYPES: readonly ActivityType[] = ['RUN','WALK','SWIM','WEIGHTS','BIKE','HYDRATION'] as const;
+const TYPES: readonly ActivityType[] = ['RUN','WALK','SWIM','WEIGHTS','BIKE','HYDRATION','ROW','STAIRMASTER'] as const;
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, type, value, unit, durationMinutes, notes, activityDate, latitude, longitude } = body ?? {};
+    const { userId, type, value, unit, durationMinutes, notes, activityDate, latitude, longitude, photoUrl } = body ?? {};
 
     if (!userId || typeof userId !== 'string') {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
     if (!type || !TYPES.includes(type)) {
       return NextResponse.json({ error: `type must be one of ${TYPES.join(', ')}` }, { status: 400 });
+    }
+    if (photoUrl !== undefined && photoUrl !== null && (typeof photoUrl !== 'string' || photoUrl.length > 2048)) {
+      return NextResponse.json({ error: 'photoUrl must be a valid URL string' }, { status: 400 });
     }
 
     const hasValue = value !== undefined && value !== null && value !== '';
@@ -67,6 +70,7 @@ export async function POST(request: Request) {
         notes: notes || null,
         latitude: lat,
         longitude: lng,
+        photoUrl: photoUrl || null,
         activityDate: activityDate ? new Date(activityDate) : new Date()
       },
       include: { user: { select: { id: true, username: true } } },
@@ -83,6 +87,7 @@ export async function POST(request: Request) {
         notes: created.notes,
         latitude: created.latitude,
         longitude: created.longitude,
+        photoUrl: created.photoUrl,
         activityDate: created.activityDate,
         createdAt: created.createdAt,
       },

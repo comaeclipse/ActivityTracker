@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, Zap, Heart, Droplets, Dumbbell, Bike, Waves } from 'lucide-react';
+import { TrendingUp, Zap, Heart, Droplets, Dumbbell, Bike, Waves, ChartNoAxesColumnIncreasing } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 type FeedItem = {
@@ -12,6 +12,7 @@ type FeedItem = {
   unit: string | null;
   durationMinutes: number | null;
   notes: string | null;
+  photoUrl: string | null;
   activityDate: string;
 };
 
@@ -23,6 +24,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ElementType; iconColor: string; 
   BIKE:      { icon: Bike,       iconColor: 'text-green-500',   iconBg: 'bg-green-500/10' },
   HYDRATION: { icon: Droplets,   iconColor: 'text-sky-500',     iconBg: 'bg-sky-500/10' },
   ROW:       { icon: Waves,      iconColor: 'text-teal-500',    iconBg: 'bg-teal-500/10' },
+  STAIRMASTER: { icon: ChartNoAxesColumnIncreasing, iconColor: 'text-orange-500', iconBg: 'bg-orange-500/10' },
 };
 
 const DEFAULT_CONFIG = { icon: Zap, iconColor: 'text-yellow-500', iconBg: 'bg-yellow-500/10' };
@@ -49,6 +51,7 @@ function formatContent(type: string, value: number | null, unit: string | null):
     case 'BIKE':      return val ? `cycled ${val}` : 'went cycling';
     case 'HYDRATION': return val ? `logged ${val} of water` : 'logged hydration';
     case 'ROW':       return val ? `rowed ${val}` : 'went rowing';
+    case 'STAIRMASTER': return 'used the StairMaster';
     default:          return 'logged an activity';
   }
 }
